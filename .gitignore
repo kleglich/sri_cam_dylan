@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Datos locales y secretos
+datos/*.db
+datos/*.db-wal
+datos/*.db-shm
+datos/sri.key
+respaldos/*.sribak
+
+# Exportaciones generadas por el usuario
+exportes/*
+!exportes/.gitkeep
+
+# Sistema operativo y editores
+Thumbs.db
+Desktop.ini
+.DS_Store
+*.log
+~$*
+.vscode/
+.idea/

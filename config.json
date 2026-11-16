@@ -1,0 +1,85 @@
+{
+  "aplicacion": "SRI · Distribuciones Cam Dylan S.A.S.",
+  "version": "2.0.0",
+  "formatos_admitidos": [
+    ".xlsx",
+    ".xls",
+    ".csv"
+  ],
+  "columnas_obligatorias": [
+    "numero",
+    "nombre",
+    "direccion",
+    "tie",
+    "pt",
+    "ruta"
+  ],
+  "mapeo_columnas": {
+    "numero": [
+      "n°",
+      "nº",
+      "no",
+      "n",
+      "numero",
+      "número",
+      "num",
+      "item"
+    ],
+    "nombre": [
+      "nombre",
+      "nombres",
+      "nombre suscriptor",
+      "nombre completo",
+      "suscriptor",
+      "cliente"
+    ],
+    "direccion": [
+      "direccion",
+      "dirección",
+      "dir",
+      "domicilio",
+      "direccion entrega"
+    ],
+    "direccion_fs": [
+      "direccion fin de semana",
+      "dirección fin de semana",
+      "dir fin de semana",
+      "direccion fds"
+    ],
+    "tie": [
+      "tie",
+      "el tiempo",
+      "tiempo"
+    ],
+    "pt": [
+      "pt",
+      "portafolio"
+    ],
+    "ruta": [
+      "ruta",
+      "codigo ruta",
+      "código de ruta",
+      "codigo de ruta",
+      "cod ruta",
+      "codigo",
+      "código",
+      "zona"
+    ],
+    "novedades": [
+      "novedades",
+      "novedad",
+      "observaciones",
+      "observacion",
+      "notas"
+    ]
+  },
+  "importacion": {
+    "maximo_rechazos_detallados": 500
+  },
+  "respaldo": {
+    "carpeta_por_defecto": "respaldos",
+    "conservar_diarios": 7,
+    "carpeta_google_drive": "",
+    "dias_copia_drive": 7
+  }
+}
