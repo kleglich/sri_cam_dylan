@@ -12,6 +12,7 @@ from ..config import directorio_exportes
 from ..util import formato_fecha
 from .estilos import COLORES, FUENTE
 from .widgets import (
+    CampoFecha,
     cabecera_vista,
     crear_arbol,
     etiqueta_campo,
@@ -38,8 +39,8 @@ class VistaReportes(tk.Frame):
         cabecera_vista(
             self,
             "Reporte diario de entregas",
-            "Entregas programadas según la periodicidad, efectivas y novedades del día, por ruta y distribuidor. "
-            "Mientras el día no se cierre, las entregas sin novedad aparecen como pendientes.",
+            "Cuántas entregas había, cuántas se hicieron y qué pasó. "
+            "Antes de cerrar el día, lo no reportado figura como pendiente.",
         ).grid(row=0, column=0, sticky="ew", pady=(0, 12))
 
         self._construir_filtro()
@@ -55,19 +56,18 @@ class VistaReportes(tk.Frame):
         fila = tk.Frame(panel, bg=COLORES["panel"])
         fila.pack(fill="x")
         etiqueta_campo(fila, "FECHA DEL REPORTE").pack(side="left")
-        self.fecha = ttk.Entry(fila, width=14, font=(FUENTE, 10))
-        self.fecha.pack(side="left", padx=(8, 12), ipady=3)
-        self.fecha.insert(0, date.today().strftime("%d/%m/%Y"))
+        self.fecha = CampoFecha(fila, date.today(), al_cambiar=self._generar)
+        self.fecha.pack(side="left", padx=(8, 12))
         ttk.Button(fila, text="Generar reporte", style="Primario.TButton", command=self._generar).pack(side="left")
 
         exportar = tk.Frame(fila, bg=COLORES["panel"])
         exportar.pack(side="right")
         self.boton_html = ttk.Button(
-            exportar, text="Exportar a PDF (HTML)", style="Secundario.TButton", command=self._exportar_html, state="disabled"
+            exportar, text="Imprimir / PDF", style="Secundario.TButton", command=self._exportar_html, state="disabled"
         )
         self.boton_html.pack(side="right")
         self.boton_csv = ttk.Button(
-            exportar, text="Exportar a Excel (CSV)", style="Secundario.TButton", command=self._exportar_csv, state="disabled"
+            exportar, text="Guardar en Excel", style="Secundario.TButton", command=self._exportar_csv, state="disabled"
         )
         self.boton_csv.pack(side="right", padx=(0, 8))
 
@@ -107,37 +107,33 @@ class VistaReportes(tk.Frame):
 
         panel_ruta = tarjeta(contenedor, relleno=14)
         panel_ruta.grid(row=0, column=0, sticky="nsew", padx=(0, 8))
-        texto(panel_ruta, "Detalle por ruta", tamano=11, negrita=True).pack(anchor="w")
+        texto(panel_ruta, "Por ruta", tamano=11, negrita=True).pack(anchor="w")
         self.arbol_ruta = crear_arbol(
             panel_ruta,
             [
-                ("clave", "Ruta", 100, True),
-                ("total", "Total", 40, False),
-                ("efectivas", "Efect.", 44, False),
-                ("no_entregadas", "No ent.", 54, False),
-                ("novedades", "Noved.", 52, False),
-                ("pendientes", "Pend.", 44, False),
-                ("porcentaje", "Efectividad", 76, False),
+                ("clave", "Ruta", 70, True),
+                ("total", "Entregas", 88, False),
+                ("efectivas", "Hechas", 76, False),
+                ("problemas", "Con problema", 124, False),
+                ("porcentaje", "Efectividad", 104, False),
             ],
-            alto=6,
+            alto=4,
         )
         self.arbol_ruta.pack(fill="both", expand=True, pady=(10, 0))
 
         panel_dist = tarjeta(contenedor, relleno=14)
         panel_dist.grid(row=0, column=1, sticky="nsew", padx=(8, 0))
-        texto(panel_dist, "Detalle por distribuidor", tamano=11, negrita=True).pack(anchor="w")
+        texto(panel_dist, "Por repartidor", tamano=11, negrita=True).pack(anchor="w")
         self.arbol_dist = crear_arbol(
             panel_dist,
             [
-                ("clave", "Distribuidor", 95, True),
-                ("total", "Total", 40, False),
-                ("efectivas", "Efect.", 44, False),
-                ("no_entregadas", "No ent.", 54, False),
-                ("novedades", "Noved.", 52, False),
-                ("pendientes", "Pend.", 44, False),
-                ("porcentaje", "Efectividad", 76, False),
+                ("clave", "Repartidor", 110, True),
+                ("total", "Entregas", 88, False),
+                ("efectivas", "Hechas", 76, False),
+                ("problemas", "Con problema", 124, False),
+                ("porcentaje", "Efectividad", 104, False),
             ],
-            alto=6,
+            alto=4,
         )
         self.arbol_dist.pack(fill="both", expand=True, pady=(10, 0))
 
@@ -174,9 +170,7 @@ class VistaReportes(tk.Frame):
                         f.clave,
                         f.total,
                         f.efectivas,
-                        f.no_entregadas,
-                        f.novedades,
-                        f.pendientes,
+                        f.no_entregadas + f.novedades,
                         "—" if f.porcentaje is None else f"{f.porcentaje:.1f} %".replace(".", ","),
                     ),
                     "exito" if (f.porcentaje or 0) >= 90 else ("alerta" if f.porcentaje is not None and f.porcentaje < 70 else None),

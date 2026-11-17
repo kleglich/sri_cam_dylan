@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from datetime import date
+from tkinter import ttk
 
 from .dialogos import DialogoContrasena
 from .estilos import COLORES, FUENTE
@@ -34,13 +35,34 @@ class ShellFrame(tk.Frame):
     VISTAS = {
         "inicio": (VistaInicio, "Inicio", None),
         "importar": (VistaImportacion, "Importar listado de repartidores", "RF-01"),
-        "novedades": (VistaNovedades, "Novedades de suscripción", "RF-09"),
-        "entregas": (VistaEntregas, "Novedades de entrega", "RF-05"),
+        "novedades": (VistaNovedades, "Pasar el listado impreso", "RF-09"),
+        "entregas": (VistaEntregas, "Lo que reportan los repartidores", "RF-05"),
         "rutas": (VistaRutas, "Rutas y distribuidores", "RF-02"),
         "distribuidores": (VistaDistribuidores, "Distribuidores", "RF-04"),
         "consultas": (VistaConsultas, "Consulta del historial", "RF-06"),
         "reportes": (VistaReportes, "Reporte diario de entregas", "RF-03"),
         "respaldos": (VistaRespaldos, "Respaldos de la base de datos", "RF-07"),
+    }
+
+    # Botón «? Ayuda»: para qué sirve cada pantalla, en dos líneas.
+    AYUDAS = {
+        "inicio": "Resumen del día y la rutina que falta.\nPulse cada paso de la rutina para ir a esa pantalla.",
+        "importar": "Carga el Excel de repartidores de la empresa, tal como está.\n"
+                    "Se usa al empezar o para volver a cargar el listado completo; antes, cree un respaldo.",
+        "novedades": "Aquí se pasan los ingresos, retiros y cambios que trae el listado impreso de la editorial.\n"
+                     "Un retiro no borra al suscriptor: queda en el historial.",
+        "entregas": "Aquí se registra solo lo que avisan los repartidores: lo que no se entregó o tuvo un problema.\n"
+                    "Al final de la jornada pulse «Cerrar el día»: lo que no se reportó se da por entregado.",
+        "rutas": "Cada ruta es de un solo repartidor. Aquí se crea, se cambia de repartidor\n"
+                 "y se imprime la hoja de ruta actualizada.",
+        "distribuidores": "Aquí se registran los repartidores y se dan de baja.\n"
+                          "Para dar de baja a uno, primero pase sus rutas a otro.",
+        "consultas": "Busque entregas o suscriptores, incluidos los retirados y los que no tienen entregas.\n"
+                     "Doble clic para ver la ficha completa del suscriptor.",
+        "reportes": "Resumen de un día: cuántas entregas había, cuántas se hicieron y qué novedades hubo.\n"
+                    "Se puede guardar en Excel o imprimir.",
+        "respaldos": "Las copias de seguridad se hacen solas cada día. Una vez por semana cópielas a Google Drive\n"
+                     "y una vez al mes pulse «Verificar respaldo».",
     }
 
     def __init__(self, master, app):
@@ -104,9 +126,9 @@ class ShellFrame(tk.Frame):
                 activeforeground="white",
                 bd=0,
                 relief="flat",
-                font=(FUENTE, 9, "bold"),
+                font=(FUENTE, 11, "bold"),
                 padx=12,
-                pady=11,
+                pady=12,
                 cursor="hand2",
                 command=lambda c=clave: self.mostrar(c),
             )
@@ -162,13 +184,16 @@ class ShellFrame(tk.Frame):
         self.titulo.pack(anchor="w")
         texto(
             izquierda,
-            "Sistema de Respaldo de Información · Estación principal",
+            "Sistema de Respaldo de Información · Distribuciones Cam Dylan",
             tamano=8,
             color=COLORES["texto_suave"],
         ).pack(anchor="w", pady=(2, 0))
 
         derecha = tk.Frame(cabecera, bg=COLORES["panel"])
         derecha.pack(side="right", padx=26)
+        ttk.Button(derecha, text="?  Ayuda", style="Secundario.TButton", command=self._ayuda).pack(
+            side="left", padx=(0, 18)
+        )
         texto(derecha, fecha_larga(), tamano=9, color=COLORES["texto_suave"]).pack(side="left", padx=(0, 18))
         estado = tk.Frame(derecha, bg="#e8f5ee")
         estado.pack(side="left")
@@ -209,6 +234,12 @@ class ShellFrame(tk.Frame):
         self.titulo.configure(text=titulo)
         self._vista = clase(self.contenido, self.app)
         self._vista.pack(fill="both", expand=True)
+
+    def _ayuda(self) -> None:
+        from tkinter import messagebox
+
+        clave = self._clave_actual or "inicio"
+        messagebox.showinfo(f"Ayuda · {self.VISTAS[clave][1]}", self.AYUDAS.get(clave, ""), parent=self)
 
     def _cambiar_contrasena(self) -> None:
         DialogoContrasena(self, self.app)

@@ -9,6 +9,8 @@ from tkinter import ttk
 from ..dominio.periodicidad import OPCIONES, etiqueta
 from .estilos import COLORES, FUENTE
 from .widgets import (
+    CampoFecha,
+    al_escribir,
     cabecera_vista,
     confirmar,
     crear_arbol,
@@ -33,15 +35,15 @@ class VistaNovedades(tk.Frame):
         self.encontrados = {}
         self.seleccionado = None
 
-        self.grid_columnconfigure(0, weight=3)
-        self.grid_columnconfigure(1, weight=2)
+        self.grid_columnconfigure(0, weight=5)
+        self.grid_columnconfigure(1, weight=3)
         self.grid_rowconfigure(1, weight=1)
 
         cabecera_vista(
             self,
-            "Novedades de suscripción",
-            "Pase aquí los ingresos, retiros y cambios que llegan en el listado impreso. "
-            "Un retiro no borra al suscriptor: conserva su historial (RN-12).",
+            "Pasar el listado impreso",
+            "Pase aquí los ingresos, retiros y cambios que trae el listado de la editorial. "
+            "Un retiro no borra al suscriptor: queda en el historial.",
         ).grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 12))
 
         self._construir_formulario()
@@ -70,10 +72,8 @@ class VistaNovedades(tk.Frame):
 
         fila += 1
         etiqueta_campo(panel, "FECHA DEL LISTADO").grid(row=fila, column=0, sticky="w")
-        self.fecha = ttk.Entry(panel, width=14, font=(FUENTE, 11))
-        self.fecha.grid(row=fila, column=1, sticky="w", pady=4, ipady=3)
-        self.fecha.insert(0, date.today().strftime("%d/%m/%Y"))
-        self.fecha.bind("<FocusOut>", lambda _e: self._cargar_dia())
+        self.fecha = CampoFecha(panel, date.today(), al_cambiar=self._cargar_dia)
+        self.fecha.grid(row=fila, column=1, columnspan=3, sticky="w", pady=4)
 
         fila += 1
         self.marco_busqueda = tk.Frame(panel, bg="#f3f8fa", padx=10, pady=8)
@@ -81,9 +81,10 @@ class VistaNovedades(tk.Frame):
         texto(self.marco_busqueda, "Busque al suscriptor (nombre o dirección):", tamano=9, fondo="#f3f8fa").pack(anchor="w")
         linea = tk.Frame(self.marco_busqueda, bg="#f3f8fa")
         linea.pack(fill="x", pady=(4, 6))
-        self.buscar = ttk.Entry(linea, font=(FUENTE, 11))
+        self.buscar = ttk.Entry(linea, font=(FUENTE, 12))
         self.buscar.pack(side="left", fill="x", expand=True, ipady=3)
         self.buscar.bind("<Return>", lambda _e: self._buscar())
+        al_escribir(self.buscar, self._buscar)
         ttk.Button(linea, text="Buscar", style="Secundario.TButton", command=self._buscar).pack(side="left", padx=(8, 0))
         self.arbol_busqueda = crear_arbol(
             self.marco_busqueda,
@@ -96,11 +97,11 @@ class VistaNovedades(tk.Frame):
         for etiqueta_texto, clave in (
             ("NOMBRE", "nombre"),
             ("DIRECCIÓN (ENTRE SEMANA)", "direccion"),
-            ("DIRECCIÓN DE FIN DE SEMANA (SI ES OTRA)", "direccion_fs"),
+            ("FIN DE SEMANA (SI ES OTRA)", "direccion_fs"),
         ):
             fila += 1
             etiqueta_campo(panel, etiqueta_texto).grid(row=fila, column=0, sticky="w")
-            entrada = ttk.Entry(panel, font=(FUENTE, 11))
+            entrada = ttk.Entry(panel, font=(FUENTE, 12))
             entrada.grid(row=fila, column=1, columnspan=3, sticky="ew", pady=4, ipady=3)
             self.campos[clave] = entrada
 
@@ -118,16 +119,16 @@ class VistaNovedades(tk.Frame):
 
         fila += 1
         etiqueta_campo(panel, "PERIODICIDAD").grid(row=fila, column=0, sticky="w")
-        self.periodicidad = ttk.Combobox(panel, values=list(OPCIONES), width=14, font=(FUENTE, 11))
+        self.periodicidad = ttk.Combobox(panel, values=list(OPCIONES), width=14, font=(FUENTE, 12))
         self.periodicidad.grid(row=fila, column=1, sticky="w", pady=4, ipady=2)
         self.periodicidad.set("Diaria")
         etiqueta_campo(panel, "RUTA").grid(row=fila, column=2, sticky="e", padx=(12, 8))
-        self.ruta = ttk.Combobox(panel, state="readonly", width=12, font=(FUENTE, 11))
+        self.ruta = ttk.Combobox(panel, state="readonly", width=12, font=(FUENTE, 12))
         self.ruta.grid(row=fila, column=3, sticky="w", pady=4, ipady=2)
 
         fila += 1
         etiqueta_campo(panel, "DETALLE (OPCIONAL)").grid(row=fila, column=0, sticky="w")
-        self.detalle = ttk.Entry(panel, font=(FUENTE, 11))
+        self.detalle = ttk.Entry(panel, font=(FUENTE, 12))
         self.detalle.grid(row=fila, column=1, columnspan=3, sticky="ew", pady=4, ipady=3)
 
         fila += 1
@@ -271,19 +272,19 @@ class VistaNovedades(tk.Frame):
                 resultado = servicio.registrar_ingreso(self.sesion, self.fecha.get(), **datos)
                 if resultado["aviso"]:
                     mostrar_info(self, resultado["aviso"], "Revise el ingreso")
-                mensaje = "Ingreso registrado."
+                mensaje = f"Listo. Se registró el ingreso de {datos['nombre'].strip()}."
             elif not self.seleccionado:
-                mostrar_error(self, "Busque y seleccione primero al suscriptor.")
+                mostrar_error(self, "Primero escriba el nombre del suscriptor en el buscador y tóquelo en la lista.")
                 return
             elif tipo == "Retiro":
                 nombre = self.campos["nombre"].get()
                 if not confirmar(self, f"¿Registrar el retiro de {nombre}?\n\nNo se borra: queda en el historial.", "Confirmar retiro"):
                     return
                 servicio.registrar_retiro(self.sesion, self.seleccionado, self.fecha.get(), datos["detalle"])
-                mensaje = "Retiro registrado; el suscriptor queda inactivo."
+                mensaje = f"Listo. Se registró el retiro de {nombre}. Queda en el historial."
             else:
                 campos = servicio.registrar_cambio(self.sesion, self.seleccionado, self.fecha.get(), **datos)
-                mensaje = "Cambio registrado: " + ", ".join(campos) + "."
+                mensaje = f"Listo. Se registró el cambio de {', '.join(campos)} de {datos['nombre'].strip()}."
         except Exception as error:  # noqa: BLE001
             mostrar_error(self, str(error))
             return

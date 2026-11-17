@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import calendar
 import tkinter as tk
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from tkinter import messagebox, ttk
 from typing import Iterable
 
@@ -19,6 +20,7 @@ def texto(
     fondo: str | None = None,
     **kwargs,
 ) -> tk.Label:
+    tamano = tamano + 1 if tamano < 11 else tamano  # textos pequeños un punto más grandes: usuarios mayores
     return tk.Label(
         master,
         text=contenido,
@@ -136,3 +138,132 @@ def mostrar_info(master, mensaje: str, titulo: str = "Operación exitosa") -> No
 
 def confirmar(master, mensaje: str, titulo: str = "Confirmar") -> bool:
     return messagebox.askyesno(titulo, mensaje, parent=master)
+
+
+# Estados de entrega dichos como los dice la empresa.
+ESTADO_LEGIBLE = {
+    "PENDIENTE": "Por entregar",
+    "ENTREGADA": "Entregado",
+    "NO ENTREGADA": "No se entregó",
+    "CON NOVEDAD": "Entregado con novedad",
+}
+
+
+def al_escribir(entrada: tk.Widget, funcion, espera_ms: int = 350) -> None:
+    """Ejecuta `funcion` cuando la persona deja de escribir (filtrar sin pulsar «Buscar»)."""
+    pendiente = {"id": None}
+
+    def programar(_evento=None):
+        if pendiente["id"]:
+            entrada.after_cancel(pendiente["id"])
+        pendiente["id"] = entrada.after(espera_ms, funcion)
+
+    entrada.bind("<KeyRelease>", programar, add="+")
+
+
+class CampoFecha(tk.Frame):
+    """Fecha dd/mm/aaaa con botones Hoy, Ayer y un calendario para elegirla sin escribir."""
+
+    def __init__(self, master, valor=None, al_cambiar=None, fondo: str | None = None):
+        super().__init__(master, bg=fondo or COLORES["panel"])
+        self.al_cambiar = al_cambiar
+        self.entrada = ttk.Entry(self, width=11, font=(FUENTE, 12))
+        self.entrada.pack(side="left", ipady=3)
+        self.botones = [
+            ttk.Button(self, text="Hoy", style="Mini.TButton", width=4, command=lambda: self.set(date.today(), True)),
+            ttk.Button(self, text="Ayer", style="Mini.TButton", width=4,
+                       command=lambda: self.set(date.today() - timedelta(days=1), True)),
+            ttk.Button(self, text="Calendario", style="Mini.TButton", width=9, command=self._abrir_calendario),
+        ]
+        for boton in self.botones:
+            boton.pack(side="left", padx=(4, 0))
+        self.entrada.bind("<Return>", lambda _e: self._avisar())
+        if valor is not None:
+            self.set(valor)
+
+    def get(self) -> str:
+        return self.entrada.get().strip()
+
+    def set(self, valor, avisar: bool = False) -> None:
+        self.entrada.delete(0, "end")
+        if valor:
+            self.entrada.insert(0, valor.strftime("%d/%m/%Y"))
+        if avisar:
+            self._avisar()
+
+    def estado(self, activo: bool) -> None:
+        for control in [self.entrada, *self.botones]:
+            control.configure(state="normal" if activo else "disabled")
+
+    def _avisar(self) -> None:
+        if self.al_cambiar:
+            self.al_cambiar()
+
+    def _abrir_calendario(self) -> None:
+        try:
+            actual = datetime.strptime(self.get(), "%d/%m/%Y").date()
+        except ValueError:
+            actual = date.today()
+        Calendario(self, actual, lambda dia: self.set(dia, True))
+
+
+MESES = ("Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto",
+         "Septiembre", "Octubre", "Noviembre", "Diciembre")
+
+
+class Calendario(tk.Toplevel):
+    """Mes en una cuadrícula; un clic en el día lo elige. Los días futuros no se pueden elegir."""
+
+    def __init__(self, master, fecha: date, al_elegir):
+        super().__init__(master)
+        self.title("Elegir fecha")
+        self.configure(bg=COLORES["panel"])
+        self.resizable(False, False)
+        self.transient(master.winfo_toplevel())
+        self.al_elegir = al_elegir
+        self.anio, self.mes = fecha.year, fecha.month
+        self.marco = tk.Frame(self, bg=COLORES["panel"], padx=14, pady=12)
+        self.marco.pack()
+        self._dibujar()
+        self.update_idletasks()
+        x = master.winfo_rootx()
+        y = master.winfo_rooty() + master.winfo_height() + 4
+        self.geometry(f"+{x}+{y}")
+        self.grab_set()
+
+    def _mover(self, pasos: int) -> None:
+        total = self.anio * 12 + self.mes - 1 + pasos
+        self.anio, self.mes = divmod(total, 12)
+        self.mes += 1
+        self._dibujar()
+
+    def _dibujar(self) -> None:
+        for widget in self.marco.winfo_children():
+            widget.destroy()
+        cabeza = tk.Frame(self.marco, bg=COLORES["panel"])
+        cabeza.grid(row=0, column=0, columnspan=7, sticky="ew", pady=(0, 8))
+        ttk.Button(cabeza, text="◀", width=3, style="Secundario.TButton", command=lambda: self._mover(-1)).pack(side="left")
+        ttk.Button(cabeza, text="▶", width=3, style="Secundario.TButton", command=lambda: self._mover(1)).pack(side="right")
+        tk.Label(cabeza, text=f"{MESES[self.mes - 1]} {self.anio}", bg=COLORES["panel"],
+                 font=(FUENTE, 13, "bold"), fg=COLORES["texto"]).pack(side="left", expand=True)
+        for columna, nombre in enumerate(("Lu", "Ma", "Mi", "Ju", "Vi", "Sá", "Do")):
+            tk.Label(self.marco, text=nombre, bg=COLORES["panel"], fg=COLORES["texto_suave"],
+                     font=(FUENTE, 11, "bold"), width=4).grid(row=1, column=columna)
+        hoy = date.today()
+        for fila, semana in enumerate(calendar.monthcalendar(self.anio, self.mes), start=2):
+            for columna, dia in enumerate(semana):
+                if not dia:
+                    continue
+                fecha = date(self.anio, self.mes, dia)
+                boton = tk.Button(
+                    self.marco, text=str(dia), width=4, font=(FUENTE, 12), relief="flat",
+                    bg=COLORES["primario"] if fecha == hoy else COLORES["primario_suave"],
+                    fg="white" if fecha == hoy else COLORES["texto"],
+                    state="disabled" if fecha > hoy else "normal",
+                    command=lambda f=fecha: self._elegir(f),
+                )
+                boton.grid(row=fila, column=columna, padx=2, pady=2)
+
+    def _elegir(self, fecha: date) -> None:
+        self.destroy()
+        self.al_elegir(fecha)

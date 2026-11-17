@@ -35,20 +35,21 @@ def configurar_estilos(root: tk.Misc) -> ttk.Style:
     except tk.TclError:
         pass
 
-    root.option_add("*Font", (FUENTE, 10))
-    root.option_add("*TCombobox*Listbox.font", (FUENTE, 10))
+    # Letra amplia en todo el sistema: lo usan personas mayores (sección 6.3.6 del informe).
+    root.option_add("*Font", (FUENTE, 11))
+    root.option_add("*TCombobox*Listbox.font", (FUENTE, 12))
 
-    estilo.configure(".", font=(FUENTE, 10), background=COLORES["fondo"], foreground=COLORES["texto"])
+    estilo.configure(".", font=(FUENTE, 11), background=COLORES["fondo"], foreground=COLORES["texto"])
     estilo.configure("TFrame", background=COLORES["fondo"])
     estilo.configure("TLabel", background=COLORES["fondo"], foreground=COLORES["texto"])
-    estilo.configure("TButton", font=(FUENTE, 10), padding=(12, 7))
+    estilo.configure("TButton", font=(FUENTE, 11), padding=(14, 9))
 
     estilo.configure(
         "Primario.TButton",
         background=COLORES["primario"],
         foreground=COLORES["blanco"],
-        font=(FUENTE, 10, "bold"),
-        padding=(14, 8),
+        font=(FUENTE, 11, "bold"),
+        padding=(16, 10),
         borderwidth=0,
     )
     estilo.map(
@@ -60,8 +61,8 @@ def configurar_estilos(root: tk.Misc) -> ttk.Style:
         "Secundario.TButton",
         background=COLORES["blanco"],
         foreground=COLORES["primario"],
-        font=(FUENTE, 10),
-        padding=(12, 7),
+        font=(FUENTE, 11),
+        padding=(14, 9),
         bordercolor=COLORES["borde"],
         relief="solid",
         borderwidth=1,
@@ -75,17 +76,29 @@ def configurar_estilos(root: tk.Misc) -> ttk.Style:
         "Peligro.TButton",
         background="#fbeae9",
         foreground=COLORES["alerta"],
-        font=(FUENTE, 10, "bold"),
-        padding=(12, 7),
+        font=(FUENTE, 11, "bold"),
+        padding=(14, 9),
         borderwidth=0,
     )
     estilo.map("Peligro.TButton", background=[("active", "#f5d6d4")])
+    estilo.configure("Mini.TButton", background=COLORES["blanco"], foreground=COLORES["primario"], font=(FUENTE, 11),
+                     padding=(9, 7), bordercolor=COLORES["borde"], relief="solid", borderwidth=1)
+    estilo.map("Mini.TButton", background=[("active", COLORES["primario_suave"])])
+    # Botones grandes para las acciones de todos los días.
+    for nombre, fondo, activo in (
+        ("Grande.TButton", COLORES["primario"], COLORES["primario_hover"]),
+        ("Alerta.TButton", COLORES["alerta"], "#8f1e18"),
+        ("Aviso.TButton", "#a86a00", "#8a5600"),
+    ):
+        estilo.configure(nombre, background=fondo, foreground=COLORES["blanco"], font=(FUENTE, 13, "bold"),
+                         padding=(20, 11), borderwidth=0)
+        estilo.map(nombre, background=[("active", activo), ("disabled", "#b9c7cf")])
 
     estilo.configure(
         "TEntry",
         fieldbackground=COLORES["blanco"],
         bordercolor=COLORES["borde"],
-        padding=(8, 7),
+        padding=(9, 8),
     )
     estilo.map("TEntry", bordercolor=[("focus", COLORES["primario"])])
     estilo.configure(
@@ -107,16 +120,16 @@ def configurar_estilos(root: tk.Misc) -> ttk.Style:
         background=COLORES["blanco"],
         fieldbackground=COLORES["blanco"],
         foreground=COLORES["texto"],
-        rowheight=30,
-        font=(FUENTE, 10),
+        rowheight=38,
+        font=(FUENTE, 12),
         borderwidth=0,
     )
     estilo.configure(
         "Treeview.Heading",
         background="#e8f1f5",
         foreground=COLORES["sidebar"],
-        font=(FUENTE, 9, "bold"),
-        padding=(6, 7),
+        font=(FUENTE, 11, "bold"),
+        padding=(8, 9),
         relief="flat",
     )
     estilo.map(

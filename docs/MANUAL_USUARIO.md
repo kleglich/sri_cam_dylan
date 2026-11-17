@@ -22,13 +22,20 @@ Este manual describe el uso diario de la aplicación para los dos roles del proy
 
 > La base de demostración trae 76 suscriptores activos en 5 rutas, 4 distribuidores, una semana de entregas cerradas y las novedades del listado impreso de hoy.
 
+### Ayudas en pantalla
+
+- La pantalla de **Inicio** muestra la **rutina de hoy** con marcas (✓ hecho, ○ falta) y un botón **Ir** para cada paso.
+- Cada pantalla tiene un botón **? Ayuda** arriba a la derecha que explica para qué sirve.
+- Las fechas se eligen con **Hoy**, **Ayer** o **Calendario**; no hace falta escribirlas.
+- Los mensajes de error dicen qué hacer, por ejemplo: «La dirección no tiene número. Pregunte a la editorial por WhatsApp y regístrela después».
+
 ### La rutina de cada día
 
 | Momento | Quién | Pantalla |
 |---|---|---|
-| Llega la prensa con el listado impreso | Secretaría | **Novedades de suscripción**: pasar ingresos, retiros y cambios |
-| Los distribuidores reportan por WhatsApp o llamada | Secretaría | **Novedades de entrega**: registrar solo lo que reportan |
-| Fin de la jornada | Secretaría | **Novedades de entrega → Cerrar el día** (genera el respaldo diario) |
+| Llega la prensa con el listado impreso | Secretaría | **Pasar el listado impreso**: ingresos, retiros y cambios |
+| Los repartidores avisan por WhatsApp o llamada | Secretaría | **Lo que reportan los repartidores**: registrar solo lo que avisan |
+| Fin de la jornada | Secretaría | **Lo que reportan los repartidores → Cerrar el día** (genera el respaldo diario) |
 | Una vez por semana | Gerencia | **Respaldos → Copiar a Google Drive** |
 | Cuando se necesite | Gerencia | **Reporte diario de entregas** |
 
@@ -51,8 +58,8 @@ Este manual describe el uso diario de la aplicación para los dos roles del proy
 | Función | Secretaría | Gerencia |
 |---|:---:|:---:|
 | Importar el listado de repartidores (RF-01) | Sí | No |
-| Novedades de suscripción (RF-09) | Sí | No |
-| Novedades de entrega y cierre del día (RF-05) | Sí | No |
+| Pasar el listado impreso (RF-09) | Sí | No |
+| Lo que reportan los repartidores y cierre del día (RF-05) | Sí | No |
 | Rutas y ruta imprimible (RF-02) | Sí | No |
 | Distribuidores (RF-04) | Sí | No |
 | Consultar historial (RF-06) | Sí | Sí |
@@ -81,7 +88,7 @@ Este manual describe el uso diario de la aplicación para los dos roles del proy
 
 ![Importar listado](capturas/03_importar.png)
 
-Se usa para la **carga inicial** del Excel de la empresa y, si hace falta, para volver a cargar el listado completo. Las novedades del día a día **no** se importan: se registran en **Novedades de suscripción**.
+Se usa para la **carga inicial** del Excel de la empresa y, si hace falta, para volver a cargar el listado completo. Las novedades del día a día **no** se importan: se registran en **Pasar el listado impreso**.
 
 ### 4.1 Cómo debe estar el archivo
 
@@ -127,9 +134,9 @@ Un libro `.xlsx` o `.xls` con **una hoja por distribuidor**. Cada hoja puede ten
 
 ---
 
-## 5. Novedades de suscripción (RF-09)
+## 5. Pasar el listado impreso (RF-09)
 
-![Novedades de suscripción](capturas/10_novedades.png)
+![Pasar el listado impreso](capturas/10_novedades.png)
 
 Aquí se pasan los **ingresos, retiros y cambios** que llegan en el listado impreso.
 
@@ -149,15 +156,16 @@ Validaciones:
 
 ---
 
-## 6. Novedades de entrega y cierre del día (RF-05)
+## 6. Lo que reportan los repartidores y cierre del día (RF-05)
 
-![Novedades de entrega](capturas/04_entregas.png)
+![Lo que reportan los repartidores](capturas/04_entregas.png)
 
 La tabla muestra las **entregas programadas** de la fecha según la periodicidad de cada suscriptor activo (RN-11). El fin de semana aparece la dirección de fin de semana, cuando el suscriptor la tiene.
 
-1. Ajuste la **fecha**, la **ruta** o escriba un texto en **Buscar** y pulse **Cargar**.
-2. Cuando un distribuidor reporte algo, seleccione al suscriptor, elija **NO ENTREGADA** o **CON NOVEDAD**, describa la novedad (ejemplar faltante en el paquete, reposición, reclamo) y pulse **Guardar novedad**.
-3. Al terminar la jornada pulse **Cerrar el día**: las entregas programadas que siguen **pendientes** quedan como **ENTREGADA**; las novedades registradas se conservan. Al cerrar el día también se genera el **respaldo diario automático**.
+1. Elija la **fecha** con los botones **Hoy**, **Ayer** o **Calendario**. Para buscar a alguien, escriba parte del nombre o la dirección: la lista se filtra mientras escribe.
+2. Cuando un repartidor avise algo, toque al suscriptor en la lista. En **Qué pasó** elija un motivo rápido (ejemplar faltante en el paquete, reclamo del suscriptor, se hizo reposición) o escríbalo, y pulse el botón grande que corresponde: **No se entregó** o **Entregado con novedad**. Si fue un error, **Sí se entregó** lo deja como entregado.
+3. El sistema confirma en palabras: «Listo. Se registró que no se entregó a…».
+4. Al terminar la jornada pulse **Cerrar el día…**, en el recuadro de la derecha. El sistema dice cuántas entregas va a marcar («Se marcarán 48 entregas como entregadas. ¿Continuar?»); lo ya reportado no cambia. Al cerrar el día también se genera el **respaldo diario automático**.
 
 Notas: no se admiten fechas futuras (RN-04); cada suscriptor tiene un solo estado por día (RN-03); no se registran entregas a un suscriptor después de su retiro.
 
@@ -205,7 +213,7 @@ En **Buscar en** elija:
 1. Abra **Reporte diario de entregas** (Gerencia), ajuste la fecha y pulse **Generar reporte**.
 2. El reporte muestra las entregas **programadas**, efectivas, no entregadas, con novedad y pendientes; la **efectividad** = efectivas ÷ programadas × 100 (RN-05), por ruta y por distribuidor, y la **lista de novedades del día** (de entrega y de suscripción).
 3. Si no hay entregas programadas en la fecha, se informa y no se calcula el porcentaje.
-4. **Exportar a Excel (CSV)** o **Exportar a PDF (HTML)** (en el navegador: Imprimir → Guardar como PDF).
+4. **Guardar en Excel** o **Imprimir / PDF** (en el navegador: Imprimir → Guardar como PDF).
 
 ---
 

@@ -99,11 +99,11 @@ class RespaldoServicio:
             )
         if estado["drive_vencido"]:
             if estado["dias_drive"] is None:
-                avisos.append("Aún no se ha copiado ningún respaldo a Google Drive (RN-09).")
+                avisos.append("Aún no se ha copiado ningún respaldo a Google Drive. La Gerencia debe hacerlo en «Respaldos».")
             else:
                 avisos.append(
                     f"Han pasado {estado['dias_drive']} días desde la última copia en Google Drive. "
-                    "La Gerencia debe copiar el último respaldo (RN-09)."
+                    "La Gerencia debe copiar el último respaldo en «Respaldos»."
                 )
         if estado["verificacion_vencida"]:
             cuando = (
@@ -112,8 +112,8 @@ class RespaldoServicio:
                 else f"Han pasado {estado['dias_verificacion']} días sin verificar un respaldo"
             )
             avisos.append(
-                f"{cuando}. La Gerencia debe usar «Verificar respaldo» una vez al mes "
-                "(prueba de restauración, sección 6.6)."
+                f"{cuando}. Una vez al mes, la Gerencia debe pulsar «Verificar respaldo» en «Respaldos» "
+                "para comprobar que se puede recuperar la información."
             )
         return avisos
 

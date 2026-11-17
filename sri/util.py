@@ -56,7 +56,9 @@ def parsear_fecha(texto: str) -> date:
             return datetime.strptime(cadena, formato).date()
         except ValueError:
             continue
-    raise DatosInvalidos("La fecha debe tener el formato dd/mm/aaaa.")
+    raise DatosInvalidos(
+        "Escriba la fecha como día/mes/año, por ejemplo 17/11/2026, o use los botones Hoy, Ayer o Calendario."
+    )
 
 
 def formato_fecha(valor: date | datetime | str | None) -> str:

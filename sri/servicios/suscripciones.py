@@ -16,8 +16,8 @@ from .auditoria import AuditoriaServicio
 from .autenticacion import AutenticacionServicio
 
 DIRECCION_INCOMPLETA = (
-    "La dirección está incompleta (debe incluir al menos un número, por ejemplo «Calle 10 # 5-20»). "
-    "Consulte a la editorial antes de registrar la novedad."
+    "La dirección no tiene número o está incompleta (por ejemplo, «Calle 10 # 5-20»). "
+    "Pregunte a la editorial por WhatsApp y regístrela después."
 )
 CAMPOS_CAMBIO = {
     "nombre": "nombre",
@@ -197,7 +197,7 @@ class SuscripcionServicio:
     def _fecha(fecha: str) -> str:
         fecha_dt = parsear_fecha(fecha)
         if fecha_dt > date.today():
-            raise DatosInvalidos("No se registran novedades con fecha futura.")
+            raise DatosInvalidos("La fecha es posterior a hoy. Use la fecha del listado impreso.")
         return fecha_dt.isoformat()
 
     def _existente(self, suscriptor_id: int) -> Suscriptor:

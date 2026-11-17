@@ -149,7 +149,7 @@ class OperativoServicio:
         self.auth.exigir(sesion, "RF-05")
         fecha_dt = parsear_fecha(fecha)
         if fecha_dt > date.today():
-            raise DatosInvalidos("No se registran entregas con fecha futura (RN-04).")
+            raise DatosInvalidos("La fecha es posterior a hoy. Elija hoy o un día anterior.")
         estado = (estado or "").strip().upper()
         if estado not in ESTADOS_ENTREGA:
             raise DatosInvalidos(
@@ -159,10 +159,14 @@ class OperativoServicio:
         if not suscriptor:
             raise DatosInvalidos("El suscriptor seleccionado no existe.")
         if suscriptor.fecha_retiro and fecha_dt.isoformat() >= suscriptor.fecha_retiro:
-            raise DatosInvalidos("El suscriptor estaba retirado en esa fecha (RN-12).")
+            raise DatosInvalidos(
+                "Ese suscriptor ya estaba retirado en esa fecha. Revise la fecha o busque al suscriptor correcto."
+            )
         novedad = limpiar_texto(novedad)
         if estado == "CON NOVEDAD" and not novedad:
-            raise DatosInvalidos("Describa la novedad para el estado CON NOVEDAD.")
+            raise DatosInvalidos(
+                "Escriba qué pasó (o elija un motivo rápido) y vuelva a pulsar «Entregado con novedad»."
+            )
         if estado != "CON NOVEDAD":
             novedad = ""
 
@@ -171,6 +175,11 @@ class OperativoServicio:
             self.suscriptores.actualizar_novedades(suscriptor_id, novedad)
         return self.entregas.obtener(fecha_dt.isoformat(), suscriptor_id)  # type: ignore[return-value]
 
+    def pendientes_del_dia(self, sesion: Sesion, fecha: str) -> int:
+        """Entregas programadas que el cierre del día marcaría como ENTREGADA."""
+        self.auth.exigir(sesion, "RF-05")
+        return self.entregas.contar_por_estado(parsear_fecha(fecha).isoformat()).get("PENDIENTE", 0)
+
     def cerrar_dia(self, sesion: Sesion, fecha: str) -> dict:
         """RF-05 / RN-11: los distribuidores solo reportan novedades; al cerrar el día
         las entregas programadas que siguen pendientes se dan por cumplidas y se
@@ -178,7 +187,7 @@ class OperativoServicio:
         self.auth.exigir(sesion, "RF-05")
         fecha_dt = parsear_fecha(fecha)
         if fecha_dt > date.today():
-            raise DatosInvalidos("No se puede cerrar un día futuro (RN-04).")
+            raise DatosInvalidos("Todavía no se puede cerrar ese día. Elija hoy o un día anterior.")
         marcadas = self.entregas.marcar_entregadas(fecha_dt.isoformat(), sesion.usuario_id)
         self.auditoria.registrar(
             "CIERRE_DIA", f"Día {formato_fecha(fecha_dt)} cerrado: {marcadas} entregas dadas por cumplidas",
@@ -265,7 +274,7 @@ no la comparta y destruya la hoja anterior al recibir esta.</p>
             from ..util import PermisoDenegado
 
             raise PermisoDenegado(
-                f"El rol {sesion.rol} no tiene permiso para consultar esta información."
+                "Esta información no está disponible para su usuario. Ingrese con el usuario que corresponde."
             )
 
     @staticmethod

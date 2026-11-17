@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..datos.daos import UsuarioDAO
-from ..dominio.modelos import Sesion, Usuario
+from ..dominio.modelos import PERMISOS, Sesion, Usuario
 from ..seguridad import hash_contrasena, verificar_contrasena
 from ..util import DatosInvalidos, PermisoDenegado, validar_usuario
 from .auditoria import AuditoriaServicio
@@ -62,9 +62,9 @@ class AutenticacionServicio:
 
     def exigir(self, sesion: Sesion, requisito: str) -> None:
         if not sesion.puede(requisito):
-            raise PermisoDenegado(
-                f"El rol {sesion.rol} no tiene permiso para esta operación ({requisito})."
-            )
+            roles = PERMISOS.get(requisito, set())
+            quien = "la Gerencia" if roles == {"Gerencia"} else "la Secretaría" if roles == {"Secretaria"} else "otro usuario"
+            raise PermisoDenegado(f"Esta opción es de {quien}. Cierre la sesión e ingrese con ese usuario.")
 
     def crear_usuario(self, sesion: Sesion, nombre: str, rol: str, contrasena: str) -> int:
         """Administración básica de usuarios (uso interno y de pruebas)."""

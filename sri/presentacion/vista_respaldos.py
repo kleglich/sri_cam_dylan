@@ -41,7 +41,7 @@ class VistaRespaldos(tk.Frame):
             self,
             "Respaldos de la base de datos",
             "El sistema genera cada día un respaldo cifrado y conserva los siete más recientes. "
-            "Una vez por semana copie el último a Google Drive para tenerlo fuera del equipo (RN-09).",
+            "Una vez por semana copie el último a Google Drive para tenerlo fuera del computador.",
         ).grid(row=0, column=0, sticky="ew", pady=(0, 12))
 
         self._construir_acciones()
@@ -59,7 +59,7 @@ class VistaRespaldos(tk.Frame):
         texto(bloque, "Copia de seguridad cifrada", tamano=12, negrita=True).pack(anchor="w")
         texto(
             bloque,
-            "El archivo .sribak se cifra con AES-256-GCM antes de escribirse. "
+            "Cada copia se guarda cifrada: sin la clave del sistema nadie puede leerla. "
             "La restauración verifica la integridad y reemplaza los datos actuales.",
             tamano=9,
             color=COLORES["texto_suave"],
@@ -116,7 +116,7 @@ class VistaRespaldos(tk.Frame):
             tamano=9,
             fondo="#f3f8fa",
         ).pack(side="left", padx=(12, 6), pady=8)
-        self.meses = ttk.Spinbox(depuracion, from_=1, to=120, width=5, font=(FUENTE, 10))
+        self.meses = ttk.Spinbox(depuracion, from_=1, to=120, width=5, font=(FUENTE, 12))
         self.meses.set(12)
         self.meses.pack(side="left", pady=8)
         texto(depuracion, "meses", tamano=9, fondo="#f3f8fa").pack(side="left", padx=(6, 0))
@@ -177,15 +177,15 @@ class VistaRespaldos(tk.Frame):
             fg=COLORES["alerta"] if estado["fallo_diario"] else COLORES["texto_suave"],
         )
         if estado["dias_drive"] is None:
-            self.norma.configure(text="Aún no se ha copiado ningún respaldo a Google Drive (RN-09).", fg=COLORES["alerta"])
+            self.norma.configure(text="Aún no se ha copiado ningún respaldo a Google Drive.", fg=COLORES["alerta"])
         elif estado["drive_vencido"]:
             self.norma.configure(
-                text=f"La última copia en Google Drive fue hace {estado['dias_drive']} días: cópiela ahora (RN-09).",
+                text=f"La última copia en Google Drive fue hace {estado['dias_drive']} días: cópiela ahora.",
                 fg=COLORES["aviso"],
             )
         else:
             self.norma.configure(
-                text=f"Última copia en Google Drive: {fecha_hora_legible(estado['ultimo_drive'])}. Copia semanal al día (RN-09).",
+                text=f"Última copia en Google Drive: {fecha_hora_legible(estado['ultimo_drive'])}. Copia semanal al día.",
                 fg=COLORES["exito"],
             )
         self._carpeta_drive = estado["carpeta_drive"]

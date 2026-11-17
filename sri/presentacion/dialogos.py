@@ -62,7 +62,7 @@ class DialogoContrasena(tk.Toplevel):
         texto(master, etiqueta.upper(), tamano=9, negrita=True, color=COLORES["texto_suave"]).pack(
             anchor="w", pady=(8, 4)
         )
-        entrada = ttk.Entry(master, show="•", font=(FUENTE, 11))
+        entrada = ttk.Entry(master, show="•", font=(FUENTE, 12))
         entrada.pack(fill="x", ipady=4)
         return entrada
 

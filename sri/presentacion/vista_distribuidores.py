@@ -35,7 +35,7 @@ class VistaDistribuidores(tk.Frame):
             self,
             "Distribuidores",
             "Registre, actualice y dé de baja a los integrantes del equipo operativo. "
-            "Un distribuidor con rutas asignadas no puede darse de baja (RN-02).",
+            "Para dar de baja a un repartidor, primero pase sus rutas a otro.",
         ).grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 14))
 
         self._construir_lista()
@@ -77,11 +77,11 @@ class VistaDistribuidores(tk.Frame):
         ).pack(anchor="w", pady=(3, 16))
 
         etiqueta_campo(panel, "NOMBRE COMPLETO").pack(anchor="w")
-        self.nombre = ttk.Entry(panel, font=(FUENTE, 11))
+        self.nombre = ttk.Entry(panel, font=(FUENTE, 12))
         self.nombre.pack(fill="x", pady=(5, 12), ipady=4)
 
         etiqueta_campo(panel, "TELÉFONO").pack(anchor="w")
-        self.telefono = ttk.Entry(panel, font=(FUENTE, 11))
+        self.telefono = ttk.Entry(panel, font=(FUENTE, 12))
         self.telefono.pack(fill="x", pady=(5, 16), ipady=4)
 
         self.estado = texto(panel, "Seleccione un distribuidor o cree uno nuevo.", tamano=9, color=COLORES["texto_suave"])
@@ -97,7 +97,7 @@ class VistaDistribuidores(tk.Frame):
         texto(
             nota,
             "Las rutas se asignan desde la opción “Rutas y distribuidores”. "
-            "Cada ruta tiene un único distribuidor a la vez (RN-01).",
+            "Cada ruta es de un solo repartidor a la vez.",
             tamano=8,
             color=COLORES["texto_suave"],
             fondo="#f3f8fa",

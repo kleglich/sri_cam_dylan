@@ -99,7 +99,7 @@ class VistaImportacion(tk.Frame):
         self.barra.pack(fill="x", pady=(12, 0))
         self.estado = texto(
             panel,
-            "Seleccione un archivo para comenzar. La importación se aplica completa o no se aplica (RN-06).",
+            "Seleccione un archivo para comenzar. Si algo falla, no se cambia nada: se carga todo o nada.",
             tamano=9,
             color=COLORES["texto_suave"],
         )
@@ -160,7 +160,7 @@ class VistaImportacion(tk.Frame):
         texto(panel, "Rechazos y casos para revisar", tamano=11, negrita=True).pack(anchor="w")
         texto(
             panel,
-            "Cada rechazo queda justificado (RNF-04); los casos para revisar se consultan con la Gerencia.",
+            "Cada fila que no se cargó dice por qué; los casos para revisar se consultan con la Gerencia.",
             tamano=8,
             color=COLORES["texto_suave"],
         ).pack(anchor="w", pady=(3, 10))
@@ -188,7 +188,7 @@ class VistaImportacion(tk.Frame):
                 ("fecha", "Carga", 120, False),
                 ("leidos", "Leídos", 56, False),
                 ("nuevos", "Nuevos", 62, False),
-                ("rech", "Rech.", 50, False),
+                ("rech", "Rechazados", 96, False),
             ],
             alto=8,
         )
@@ -249,7 +249,7 @@ class VistaImportacion(tk.Frame):
 
         self.aviso_cuadre.configure(
             text=(
-                f"{resumen.hojas} hoja(s) procesadas en una sola transacción (RN-06). "
+                f"{resumen.hojas} hoja(s) leídas. "
                 + (f"Se crearon {resumen.rutas_creadas} ruta(s) nueva(s)." if resumen.rutas_creadas else "")
             )
         )
@@ -320,7 +320,7 @@ class VistaImportacion(tk.Frame):
                         a.total_importados,
                         a.total_rechazados,
                     ),
-                    "alerta" if a.total_rechazados else None,
+                    "aviso" if a.total_rechazados else None,  # rojo solo para errores
                 )
                 for a in archivos
             ],

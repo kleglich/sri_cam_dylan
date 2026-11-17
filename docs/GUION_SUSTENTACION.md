@@ -27,8 +27,8 @@ Duración objetivo: **10 a 12 minutos** (8 de exposición y demostración + 3 de
 | 1:00–2:00 | Solución y arquitectura | SRI, 9 RF, 12 RN, capas y seguridad. |
 | 2:00–2:30 | Login y avisos | Entrar como Secretaría: aparece el aviso de respaldos en Google Drive. |
 | 2:30–4:00 | Listado de repartidores | Importar el listado actualizado: hojas, periodicidad, códigos de ruta, casos para revisar. |
-| 4:00–5:00 | Novedades de suscripción | Registrar un ingreso; mostrar el rechazo por dirección incompleta y el retiro sin borrar. |
-| 5:00–6:15 | Novedades de entrega | Entregas programadas por periodicidad, una novedad y **Cerrar el día**. |
+| 4:00–5:00 | Pasar el listado impreso | Registrar un ingreso; mostrar el rechazo por dirección incompleta y el retiro sin borrar. |
+| 5:00–6:15 | Lo que reportan los repartidores | Entregas programadas por periodicidad, una novedad y **Cerrar el día**. |
 | 6:15–7:00 | Ruta imprimible | Imprimir la ruta de un distribuidor con sus tres secciones. |
 | 7:00–8:30 | Gerencia | Reporte sobre entregas programadas y copia a Google Drive. |
 | 8:30–9:30 | Pruebas y trazabilidad | Las 31 pruebas y la matriz RF/RN. |
@@ -61,16 +61,16 @@ Duración objetivo: **10 a 12 minutos** (8 de exposición y demostración + 3 de
    - Para revisar: «“(quincenal)” no es una periodicidad conocida; el código AL está en la hoja de Marta pero ya es de Luis; un suscriptor retirado no se reactiva al recargar el Excel».
 4. Explicar: «El sistema separa la periodicidad escrita junto al nombre, asocia cada código de ruta a su distribuidor por las iniciales y une en un solo suscriptor a quien recibe en la oficina entre semana y en la casa el fin de semana. Todo es una sola transacción.»
 
-### 3.5 Novedades de suscripción (1 min)
+### 3.5 Pasar el listado impreso (1 min)
 
-1. **Novedades de suscripción** → Ingreso con dirección «Centro» → mensaje: dirección incompleta, consultar a la editorial.
+1. **Pasar el listado impreso** → Ingreso con dirección «Centro» → mensaje: dirección incompleta, consultar a la editorial.
 2. Corregir la dirección («Calle 40 # 2-15»), marcar El Tiempo, periodicidad `L-V`, ruta y guardar.
 3. Mostrar la lista **Novedades del día** (la que se usa para avisar a los distribuidores) y explicar: «Un retiro no borra: el suscriptor queda inactivo y su historial se conserva (RN-12).»
 
-### 3.6 Novedades de entrega y cierre (1,25 min)
+### 3.6 Lo que reportan los repartidores y cierre (1,25 min)
 
-1. **Novedades de entrega**: «Aquí están las entregas programadas de hoy según la periodicidad (RN-11); un suscriptor `S-D` no aparece un martes.»
-2. Seleccionar a un suscriptor → **CON NOVEDAD** → «Ejemplar faltante; se repuso» → **Guardar novedad**.
+1. **Lo que reportan los repartidores**: «Aquí están las entregas de hoy según la periodicidad; un suscriptor `S-D` no aparece un martes.»
+2. Tocar a un suscriptor → motivo rápido «Ejemplar faltante en el paquete» → botón **Entregado con novedad**. Mostrar el mensaje «Listo…».
 3. **Cerrar el día**: «Los distribuidores solo reportan novedades; al cerrar, las demás se dan por entregadas y se genera el respaldo diario automático.»
 
 ### 3.7 Ruta imprimible (0,75 min)

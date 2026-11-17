@@ -1,4 +1,4 @@
-"""Novedades de entrega y cierre del día (RF-05, RN-03, RN-04, RN-11)."""
+"""Lo que reportan los repartidores y cierre del día (RF-05, RN-03, RN-04, RN-11)."""
 
 from __future__ import annotations
 
@@ -6,14 +6,16 @@ import tkinter as tk
 from datetime import date
 from tkinter import ttk
 
-from ..dominio.modelos import ESTADOS_ENTREGA
-from ..util import parsear_fecha
+from ..util import formato_fecha, parsear_fecha
 from .estilos import COLORES, FUENTE
 from .widgets import (
+    ESTADO_LEGIBLE,
+    CampoFecha,
+    al_escribir,
     cabecera_vista,
+    confirmar,
     crear_arbol,
     etiqueta_campo,
-    confirmar,
     llenar_arbol,
     mostrar_error,
     mostrar_info,
@@ -22,6 +24,8 @@ from .widgets import (
 )
 
 TODAS = "(Todas las rutas)"
+MOTIVOS_RAPIDOS = ("Ejemplar faltante en el paquete", "Reclamo del suscriptor", "Se hizo reposición")
+SIN_SELECCION = "Toque un suscriptor de la lista para registrar lo que avisó el repartidor."
 
 
 class VistaEntregas(tk.Frame):
@@ -34,112 +38,108 @@ class VistaEntregas(tk.Frame):
         self.rutas_por_nombre = {}
         self.seleccionado = None
 
-        self.grid_columnconfigure(0, weight=1)
+        self.grid_columnconfigure(0, weight=3)
+        self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(2, weight=1)
 
         cabecera_vista(
             self,
-            "Novedades de entrega",
-            "Entregas programadas según la periodicidad. Registre solo las novedades y, al final, "
-            "cierre el día: las demás se dan por entregadas (RN-11).",
-        ).grid(row=0, column=0, sticky="ew", pady=(0, 12))
+            "Lo que reportan los repartidores",
+            "Registre solo lo que avisen: lo que no se entregó o tuvo un problema. "
+            "Lo que no se reporte se da por entregado al cerrar el día.",
+        ).grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 12))
 
         self._construir_filtros()
         self._construir_tabla()
-        self._construir_formulario()
+        self._construir_registro()
+        self._construir_cierre()
         self._cargar_rutas()
         self._cargar()
 
     # ------------------------------------------------------------------ #
     def _construir_filtros(self) -> None:
         panel = tarjeta(self, relleno=14)
-        panel.grid(row=1, column=0, sticky="ew", pady=(0, 12))
-
+        panel.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 12))
         fila = tk.Frame(panel, bg=COLORES["panel"])
         fila.pack(fill="x")
 
-        etiqueta_campo(fila, "FECHA (DD/MM/AAAA)").pack(side="left")
-        self.fecha = ttk.Entry(fila, width=13, font=(FUENTE, 10))
-        self.fecha.pack(side="left", padx=(8, 18), ipady=3)
-        self.fecha.insert(0, date.today().strftime("%d/%m/%Y"))
+        etiqueta_campo(fila, "FECHA").pack(side="left")
+        self.fecha = CampoFecha(fila, date.today(), al_cambiar=self._cargar)
+        self.fecha.pack(side="left", padx=(8, 22))
 
         etiqueta_campo(fila, "RUTA").pack(side="left")
-        self.combo_ruta = ttk.Combobox(fila, state="readonly", width=16, font=(FUENTE, 10))
-        self.combo_ruta.pack(side="left", padx=(8, 18), ipady=2)
+        self.combo_ruta = ttk.Combobox(fila, state="readonly", width=16, font=(FUENTE, 12))
+        self.combo_ruta.pack(side="left", padx=(8, 22), ipady=2)
         self.combo_ruta.set(TODAS)
+        self.combo_ruta.bind("<<ComboboxSelected>>", lambda _e: self._cargar())
 
         etiqueta_campo(fila, "BUSCAR").pack(side="left")
-        self.buscar = ttk.Entry(fila, width=18, font=(FUENTE, 10))
+        self.buscar = ttk.Entry(fila, width=20, font=(FUENTE, 12))
         self.buscar.pack(side="left", padx=(8, 0), ipady=3)
-        self.buscar.bind("<Return>", lambda _e: self._cargar())
+        al_escribir(self.buscar, self._cargar)
 
-        ttk.Button(fila, text="Cerrar el día", style="Primario.TButton", command=self._cerrar_dia).pack(
-            side="right"
-        )
-        ttk.Button(fila, text="Cargar", style="Secundario.TButton", command=self._cargar).pack(
-            side="right", padx=(0, 8)
-        )
-
-        self.resumen = texto(panel, "", tamano=9, color=COLORES["texto_suave"])
+        self.resumen = texto(panel, "", tamano=10, color=COLORES["texto_suave"])
         self.resumen.pack(anchor="w", pady=(10, 0))
 
     def _construir_tabla(self) -> None:
         panel = tarjeta(self, relleno=14)
-        panel.grid(row=2, column=0, sticky="nsew", pady=(0, 12))
-
+        panel.grid(row=2, column=0, columnspan=2, sticky="nsew", pady=(0, 12))
         self.arbol = crear_arbol(
             panel,
             [
-                ("suscriptor", "Suscriptor", 190),
-                ("direccion", "Dirección", 235),
-                ("ruta", "Ruta", 110),
-                ("distribuidor", "Distribuidor", 130),
-                ("estado", "Estado del día", 115),
-                ("novedad", "Novedad", 165),
+                ("suscriptor", "Suscriptor", 200),
+                ("direccion", "Dirección", 230),
+                ("ruta", "Ruta", 60, False),
+                ("distribuidor", "Repartidor", 140),
+                ("estado", "Estado", 200, False),
+                ("novedad", "Qué pasó", 190),
             ],
-            alto=12,
+            alto=6,
         )
-        self.arbol.pack(fill="both", expand=True)
         self.arbol.bind("<<TreeviewSelect>>", self._seleccionar)
 
-    def _construir_formulario(self) -> None:
-        panel = tarjeta(self, relleno=16)
-        panel.grid(row=3, column=0, sticky="ew")
+    def _construir_registro(self) -> None:
+        panel = tarjeta(self, relleno=14)
+        panel.grid(row=3, column=0, sticky="nsew", padx=(0, 8))
 
-        self.info = texto(
-            panel,
-            "Seleccione un suscriptor en la tabla para registrar su novedad.",
-            tamano=10,
-            negrita=True,
-        )
+        self.info = texto(panel, SIN_SELECCION, tamano=12, negrita=True, wraplength=760, justify="left")
         self.info.pack(anchor="w")
 
         fila = tk.Frame(panel, bg=COLORES["panel"])
-        fila.pack(fill="x", pady=(10, 0))
+        fila.pack(fill="x", pady=(8, 0))
+        etiqueta_campo(fila, "QUÉ PASÓ").pack(side="left")
+        # Motivos rápidos en la lista; también se puede escribir otro.
+        self.novedad = ttk.Combobox(fila, values=list(MOTIVOS_RAPIDOS), font=(FUENTE, 12))
+        self.novedad.pack(side="left", fill="x", expand=True, padx=(8, 0), ipady=3)
+        texto(fila, "elija un motivo o escríbalo", tamano=10, color=COLORES["texto_suave"]).pack(side="left", padx=(8, 0))
 
-        etiqueta_campo(fila, "ESTADO").pack(side="left")
-        self.combo_estado = ttk.Combobox(
-            fila, state="readonly", values=list(ESTADOS_ENTREGA), width=18, font=(FUENTE, 10)
-        )
-        self.combo_estado.set("CON NOVEDAD")
-        self.combo_estado.pack(side="left", padx=(8, 18), ipady=2)
+        botones = tk.Frame(panel, bg=COLORES["panel"])
+        botones.pack(fill="x", pady=(10, 0))
+        ttk.Button(botones, text="No se entregó", style="Alerta.TButton",
+                   command=lambda: self._guardar("NO ENTREGADA")).pack(side="left")
+        ttk.Button(botones, text="Entregado con novedad", style="Aviso.TButton",
+                   command=lambda: self._guardar("CON NOVEDAD")).pack(side="left", padx=(10, 0))
+        ttk.Button(botones, text="Sí se entregó", style="Secundario.TButton",
+                   command=lambda: self._guardar("ENTREGADA")).pack(side="left", padx=(10, 0))
 
-        etiqueta_campo(fila, "NOVEDAD (SI APLICA)").pack(side="left")
-        self.novedad = ttk.Entry(fila, font=(FUENTE, 10))
-        self.novedad.pack(side="left", fill="x", expand=True, padx=(8, 12), ipady=3)
-
-        ttk.Button(fila, text="Guardar novedad", style="Primario.TButton", command=self._guardar).pack(
-            side="right"
-        )
-
-        self.estado = texto(
-            panel,
-            "Ejemplos: ejemplar faltante en el paquete, reposición o reclamo del suscriptor. "
-            "CON NOVEDAD exige describirla.",
-            tamano=8,
-            color=COLORES["texto_suave"],
-        )
+        self.estado = texto(panel, "", tamano=11, color=COLORES["texto_suave"], wraplength=760, justify="left")
         self.estado.pack(anchor="w", pady=(8, 0))
+
+    def _construir_cierre(self) -> None:
+        # Separado de los filtros y de la tabla para que no se pulse por error.
+        panel = tarjeta(self, relleno=16, fondo="#f3f8fa")
+        panel.grid(row=3, column=1, sticky="nsew", padx=(8, 0))
+        texto(panel, "Al terminar la jornada", tamano=13, negrita=True, fondo="#f3f8fa").pack(anchor="w")
+        texto(
+            panel,
+            "Lo que no se reportó se da por entregado y se guarda la copia de seguridad del día.",
+            tamano=10,
+            color=COLORES["texto_suave"],
+            fondo="#f3f8fa",
+            wraplength=250,
+            justify="left",
+        ).pack(anchor="w", pady=(4, 10))
+        ttk.Button(panel, text="Cerrar el día…", style="Grande.TButton", command=self._cerrar_dia).pack(fill="x")
 
     # ------------------------------------------------------------------ #
     def _cargar_rutas(self) -> None:
@@ -150,22 +150,23 @@ class VistaEntregas(tk.Frame):
         self.rutas_por_nombre = {r.zona: r.id for r in rutas}
         self.combo_ruta.configure(values=[TODAS] + list(self.rutas_por_nombre))
 
-    def _cargar(self) -> None:
+    def _fecha(self) -> date | None:
         try:
             fecha = parsear_fecha(self.fecha.get())
         except Exception as error:  # noqa: BLE001
             mostrar_error(self, str(error))
+            return None
+        self.fecha.set(fecha)
+        return fecha
+
+    def _cargar(self) -> None:
+        fecha = self._fecha()
+        if fecha is None:
             return
-        self.fecha.delete(0, "end")
-        self.fecha.insert(0, fecha.strftime("%d/%m/%Y"))
         ruta_id = self.rutas_por_nombre.get(self.combo_ruta.get())
         try:
             filas = self.ctx.consultas.suscriptores_con_estado(
-                self.sesion,
-                fecha.strftime("%d/%m/%Y"),
-                ruta_id=ruta_id,
-                texto=self.buscar.get().strip(),
-                limite=300,
+                self.sesion, formato_fecha(fecha), ruta_id=ruta_id, texto=self.buscar.get().strip(), limite=300
             )
         except Exception as error:  # noqa: BLE001
             mostrar_error(self, str(error))
@@ -182,61 +183,51 @@ class VistaEntregas(tk.Frame):
                         f["suscriptor"].direccion,
                         f["suscriptor"].zona,
                         f["suscriptor"].distribuidor or "Sin asignar",
-                        f["estado"],
+                        ESTADO_LEGIBLE.get(f["estado"], f["estado"]),
                         f["novedad"] or "—",
                     ),
-                    self._etiqueta(f["estado"]),
+                    {"ENTREGADA": "exito", "NO ENTREGADA": "alerta", "CON NOVEDAD": "aviso"}.get(f["estado"]),
                 )
                 for f in filas
             ],
         )
-        filtro = "todas las rutas" if not ruta_id else self.combo_ruta.get()
+        pendientes = sum(1 for f in filas if f["estado"] == "PENDIENTE")
+        reportes = sum(1 for f in filas if f["estado"] in ("NO ENTREGADA", "CON NOVEDAD"))
         self.resumen.configure(
-            text=(
-                f"{len(filas)} entrega(s) programada(s) · {filtro} · {fecha.strftime('%d/%m/%Y')} · "
-                f"{sum(1 for f in filas if f['estado'] == 'PENDIENTE')} pendiente(s) de cerrar. "
-                "Se muestran hasta 300; use los filtros para acotar."
-            )
+            text=f"{len(filas)} entrega(s) para el {formato_fecha(fecha)} · {reportes} con reporte · "
+            f"{pendientes} por entregar (se dan por entregadas al cerrar el día)."
+            + (" Se muestran 300; escriba un nombre para acotar." if len(filas) >= 300 else "")
         )
-        if self.seleccionado and self.seleccionado in self.filas:
+        if self.seleccionado in self.filas:
             self.arbol.selection_set(str(self.seleccionado))
         else:
             self.seleccionado = None
-            self.info.configure(text="Seleccione un suscriptor en la tabla para registrar su novedad.")
+            self.info.configure(text=SIN_SELECCION)
 
     def _seleccionar(self, _evento=None) -> None:
         seleccion = self.arbol.selection()
-        if not seleccion:
-            return
-        identificador = int(seleccion[0])
-        fila = self.filas.get(identificador)
+        fila = self.filas.get(int(seleccion[0])) if seleccion else None
         if not fila:
             return
-        self.seleccionado = identificador
-        suscriptor = fila["suscriptor"]
-        self.info.configure(
-            text=f"{suscriptor.nombre} · {suscriptor.direccion} · Ruta {suscriptor.zona}"
-        )
-        self.combo_estado.set(fila["estado"])
+        self.seleccionado = fila["suscriptor"].id
+        s = fila["suscriptor"]
+        self.info.configure(text=f"{s.nombre} · {s.direccion} · Ruta {s.zona}")
         self.novedad.delete(0, "end")
         if fila["novedad"]:
             self.novedad.insert(0, fila["novedad"])
-        self.estado.configure(
-            text=f"Estado actual del {self.fecha.get()}: {fila['estado']}.",
-            fg=COLORES["texto_suave"],
-        )
+        self.estado.configure(text=f"Ahora: {ESTADO_LEGIBLE.get(fila['estado'], fila['estado'])}.", fg=COLORES["texto_suave"])
 
-    def _guardar(self) -> None:
+    def _motivo(self, motivo: str) -> None:
+        self.novedad.set(motivo)
+
+    def _guardar(self, estado: str) -> None:
         if not self.seleccionado:
-            mostrar_error(self, "Seleccione primero un suscriptor de la tabla.")
+            mostrar_error(self, "Primero toque en la lista al suscriptor del que avisó el repartidor.")
             return
+        nombre = self.filas[self.seleccionado]["suscriptor"].nombre
         try:
             self.ctx.operativo.registrar_entrega(
-                self.sesion,
-                self.seleccionado,
-                self.fecha.get(),
-                self.combo_estado.get(),
-                self.novedad.get(),
+                self.sesion, self.seleccionado, self.fecha.get(), estado, self.novedad.get()
             )
         except Exception as error:  # noqa: BLE001
             mostrar_error(self, str(error))
@@ -247,38 +238,43 @@ class VistaEntregas(tk.Frame):
         if guardado in self.filas:
             self.arbol.selection_set(str(guardado))
             self.arbol.see(str(guardado))
-        self.estado.configure(
-            text=f"Entrega actualizada a {self.combo_estado.get()} para el {self.fecha.get()}.",
-            fg=COLORES["exito"],
-        )
+        mensajes = {
+            "NO ENTREGADA": f"Listo. Se registró que no se entregó a {nombre}.",
+            "CON NOVEDAD": f"Listo. Se registró la novedad de {nombre}.",
+            "ENTREGADA": f"Listo. {nombre} quedó como entregado.",
+        }
+        self.estado.configure(text=mensajes[estado], fg=COLORES["exito"])
+        self.novedad.delete(0, "end")
 
     def _cerrar_dia(self) -> None:
-        fecha = self.fecha.get()
+        fecha = self._fecha()
+        if fecha is None:
+            return
+        texto_fecha = formato_fecha(fecha)
+        try:
+            pendientes = self.ctx.operativo.pendientes_del_dia(self.sesion, texto_fecha)
+        except Exception as error:  # noqa: BLE001
+            mostrar_error(self, str(error))
+            return
+        if not pendientes:
+            mostrar_info(self, f"El {texto_fecha} ya está cerrado: no quedan entregas por marcar.", "Cerrar el día")
+            return
         if not confirmar(
             self,
-            f"Se darán por ENTREGADAS las entregas programadas del {fecha} que siguen pendientes.\n\n"
-            "Las novedades registradas se conservan. ¿Cerrar el día?",
+            f"Se marcarán {pendientes} entrega(s) del {texto_fecha} como entregadas.\n\n"
+            "Lo que ya registró como «No se entregó» o «Entregado con novedad» no cambia.\n\n¿Continuar?",
             "Cerrar el día",
         ):
             return
         try:
-            resultado = self.ctx.operativo.cerrar_dia(self.sesion, fecha)
+            resultado = self.ctx.operativo.cerrar_dia(self.sesion, texto_fecha)
         except Exception as error:  # noqa: BLE001
             mostrar_error(self, str(error))
             return
         self._cargar()
-        respaldo = resultado["respaldo"]
         mostrar_info(
             self,
-            f"Día {fecha} cerrado: {resultado['marcadas']} entrega(s) marcadas como ENTREGADA.\n\n"
-            + (f"Respaldo diario creado: {respaldo.name}" if respaldo else "El respaldo diario de hoy ya existía."),
+            f"Listo. El {texto_fecha} quedó cerrado: {resultado['marcadas']} entrega(s) marcadas como entregadas."
+            + ("\n\nTambién se guardó la copia de seguridad del día." if resultado["respaldo"] else ""),
             "Día cerrado",
         )
-
-    @staticmethod
-    def _etiqueta(estado: str) -> str | None:
-        return {
-            "ENTREGADA": "exito",
-            "NO ENTREGADA": "alerta",
-            "CON NOVEDAD": "aviso",
-        }.get(estado)

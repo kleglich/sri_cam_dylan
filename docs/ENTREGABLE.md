@@ -135,8 +135,8 @@ Además se ejecutó una **prueba de humo de la interfaz** sobre una copia de la 
 | 1 | Ejecutar `run.bat` | Pantalla de inicio de sesión |
 | 2 | Ingresar `secretaria` / `Sri2026*` | Aviso «Aún no se ha copiado ningún respaldo a Google Drive»; menú con importar, novedades de suscripción, novedades de entrega, rutas, distribuidores e historial |
 | 3 | Revisar **Inicio** | 76 suscriptores activos, 5 rutas, 4 distribuidores y las entregas programadas de hoy |
-| 4 | **Novedades de suscripción** | Novedades de hoy: 1 ingreso, 1 retiro y 1 cambio; registrar un ingreso con dirección «Centro» → mensaje de dirección incompleta |
-| 5 | **Novedades de entrega** | Entregas programadas de hoy según la periodicidad; registrar una novedad y pulsar **Cerrar el día** → las pendientes pasan a ENTREGADA |
+| 4 | **Pasar el listado impreso** | Novedades de hoy: 1 ingreso, 1 retiro y 1 cambio; registrar un ingreso con dirección «Centro» → mensaje de dirección incompleta |
+| 5 | **Lo que reportan los repartidores** | Entregas de hoy según la periodicidad; tocar a un suscriptor, elegir un motivo rápido y pulsar **Entregado con novedad**; luego **Cerrar el día…** → la confirmación dice cuántas se marcarán |
 | 6 | **Importar** `listado_repartidores_actualizado.xlsx` | 86 leídos = 3 nuevos + 81 actualizados + 2 rechazados, y 5 casos para revisar: periodicidad «quincenal», ruta AL en la hoja de Marta (ya es de Luis), el suscriptor retirado hoy (aparece en dos hojas) y un posible duplicado del suscriptor cuya dirección se cambió hoy |
 | 7 | **Rutas** → seleccionar una ruta → **Imprimir ruta del distribuidor** | Hoja con las secciones Entregas diarias, Sábados y domingos y Portafolio |
 | 8 | **Distribuidores** → dar de baja uno con rutas | Mensaje de RN-02; la baja no se aplica |

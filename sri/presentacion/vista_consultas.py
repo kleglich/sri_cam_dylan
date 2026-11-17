@@ -12,6 +12,9 @@ from ..util import formato_fecha
 from .dialogos import DialogoHistorial
 from .estilos import COLORES, FUENTE
 from .widgets import (
+    ESTADO_LEGIBLE,
+    CampoFecha,
+    al_escribir,
     cabecera_vista,
     crear_arbol,
     etiqueta_campo,
@@ -63,29 +66,30 @@ class VistaConsultas(tk.Frame):
         fila1 = tk.Frame(panel, bg=COLORES["panel"])
         fila1.pack(fill="x")
         etiqueta_campo(fila1, "SUSCRIPTOR O DIRECCIÓN").pack(side="left")
-        self.texto_busqueda = ttk.Entry(fila1, width=26, font=(FUENTE, 10))
+        self.texto_busqueda = ttk.Entry(fila1, width=26, font=(FUENTE, 12))
         self.texto_busqueda.pack(side="left", padx=(8, 16), ipady=3)
         self.texto_busqueda.bind("<Return>", lambda _e: self._buscar())
+        al_escribir(self.texto_busqueda, self._buscar)
 
         etiqueta_campo(fila1, "RUTA").pack(side="left")
-        self.combo_ruta = ttk.Combobox(fila1, state="readonly", width=19, font=(FUENTE, 10))
+        self.combo_ruta = ttk.Combobox(fila1, state="readonly", width=19, font=(FUENTE, 12))
         self.combo_ruta.pack(side="left", padx=(8, 16), ipady=2)
         self.combo_ruta.set(TODAS)
 
         etiqueta_campo(fila1, "DISTRIBUIDOR").pack(side="left")
-        self.combo_distribuidor = ttk.Combobox(fila1, state="readonly", width=21, font=(FUENTE, 10))
+        self.combo_distribuidor = ttk.Combobox(fila1, state="readonly", width=21, font=(FUENTE, 12))
         self.combo_distribuidor.pack(side="left", padx=(8, 0), ipady=2)
         self.combo_distribuidor.set(TODAS)
 
         fila2 = tk.Frame(panel, bg=COLORES["panel"])
         fila2.pack(fill="x", pady=(10, 0))
-        etiqueta_campo(fila2, "DESDE (DD/MM/AAAA)").pack(side="left")
-        self.desde = ttk.Entry(fila2, width=13, font=(FUENTE, 10))
-        self.desde.pack(side="left", padx=(8, 18), ipady=3)
+        etiqueta_campo(fila2, "DESDE").pack(side="left")
+        self.desde = CampoFecha(fila2, al_cambiar=self._buscar)
+        self.desde.pack(side="left", padx=(8, 18))
 
-        etiqueta_campo(fila2, "HASTA (DD/MM/AAAA)").pack(side="left")
-        self.hasta = ttk.Entry(fila2, width=13, font=(FUENTE, 10))
-        self.hasta.pack(side="left", padx=(8, 18), ipady=3)
+        etiqueta_campo(fila2, "HASTA").pack(side="left")
+        self.hasta = CampoFecha(fila2, al_cambiar=self._buscar)
+        self.hasta.pack(side="left", padx=(8, 18))
 
         etiqueta_campo(fila2, "ESTADO").pack(side="left")
         self.combo_estado = ttk.Combobox(
@@ -100,8 +104,8 @@ class VistaConsultas(tk.Frame):
         )
 
         hoy = date.today()
-        self.desde.insert(0, (hoy - timedelta(days=7)).strftime("%d/%m/%Y"))
-        self.hasta.insert(0, hoy.strftime("%d/%m/%Y"))
+        self.desde.set(hoy - timedelta(days=7))
+        self.hasta.set(hoy)
 
         self._cargar_rutas()
 
@@ -115,13 +119,13 @@ class VistaConsultas(tk.Frame):
         self.arbol_suscriptores = crear_arbol(
             self.marco_suscriptores,
             [
-                ("suscriptor", "Suscriptor", 180),
-                ("direccion", "Dirección", 190),
-                ("ruta", "Ruta", 50, False),
-                ("distribuidor", "Distribuidor", 120),
+                ("suscriptor", "Suscriptor", 170),
+                ("direccion", "Dirección", 170),
+                ("ruta", "Ruta", 64, False),
+                ("distribuidor", "Repartidor", 120),
                 ("periodicidad", "Periodicidad", 110),
-                ("productos", "Productos", 120),
-                ("estado", "Estado", 175, False),
+                ("productos", "Productos", 110),
+                ("estado", "Estado", 215, False),
             ],
             alto=14,
         )
@@ -170,8 +174,8 @@ class VistaConsultas(tk.Frame):
         self.combo_ruta.set(TODAS)
         self.combo_distribuidor.set(TODAS)
         self.combo_estado.set(TODAS)
-        self.desde.delete(0, "end")
-        self.hasta.delete(0, "end")
+        self.desde.set(None)
+        self.hasta.set(None)
         self._buscar()
 
     def _cambiar_modo(self) -> None:
@@ -181,7 +185,7 @@ class VistaConsultas(tk.Frame):
         self.combo_estado.configure(values=[TODAS] + (["ACTIVO", "RETIRADO"] if suscriptores else list(ESTADOS_ENTREGA)))
         self.combo_estado.set(TODAS)
         for campo in (self.desde, self.hasta):  # las fechas solo filtran entregas
-            campo.configure(state="disabled" if suscriptores else "normal")
+            campo.estado(not suscriptores)
         self._buscar()
 
     def _buscar_suscriptores(self) -> None:
@@ -247,7 +251,7 @@ class VistaConsultas(tk.Frame):
                         e.direccion,
                         e.zona,
                         e.distribuidor,
-                        e.estado,
+                        ESTADO_LEGIBLE.get(e.estado, e.estado),
                         e.novedad or "—",
                     ),
                     {

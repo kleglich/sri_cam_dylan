@@ -43,7 +43,7 @@ class VistaRutas(tk.Frame):
             self,
             "Rutas y distribuidores",
             "Asigne o modifique la zona de entrega de cada distribuidor. "
-            "Una ruta tiene un único distribuidor a la vez y agrupa a sus suscriptores (RN-01).",
+            "Cada ruta es de un solo repartidor a la vez y agrupa a sus suscriptores.",
         ).grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 14))
 
         self._construir_lista()
@@ -89,11 +89,11 @@ class VistaRutas(tk.Frame):
         ).pack(anchor="w", pady=(3, 16))
 
         etiqueta_campo(panel, "ZONA O RUTA").pack(anchor="w")
-        self.zona = ttk.Entry(panel, font=(FUENTE, 11))
+        self.zona = ttk.Entry(panel, font=(FUENTE, 12))
         self.zona.pack(fill="x", pady=(5, 12), ipady=4)
 
         etiqueta_campo(panel, "DISTRIBUIDOR").pack(anchor="w")
-        self.combo = ttk.Combobox(panel, state="readonly", font=(FUENTE, 10))
+        self.combo = ttk.Combobox(panel, state="readonly", font=(FUENTE, 12))
         self.combo.pack(fill="x", pady=(5, 16), ipady=3)
 
         self.estado = texto(panel, "Seleccione una ruta o cree una nueva.", tamano=9, color=COLORES["texto_suave"], wraplength=340, justify="left")
