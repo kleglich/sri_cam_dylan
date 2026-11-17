@@ -1,6 +1,7 @@
 """Genera el listado de repartidores de ejemplo (formato del Anexo D del informe v5.3).
 
-Una hoja por distribuidor con las columnas N°, NOMBRE, DIRECCION, TIE, PT y RUTA;
+Una hoja por distribuidor, con dos listas lado a lado; cada una con N°, NOMBRE, DIRECCION, TIE, PT y RUTA
+(sin encabezado en N°, TIE y RUTA, como el archivo real);
 la periodicidad va escrita junto al nombre. Incluye a propósito los casos que
 encontró la revisión del listado real: hoja repetida, código de ruta de un
 distribuidor que ya no trabaja (AL), suscriptor con dirección de oficina entre
@@ -33,7 +34,8 @@ DISTRIBUIDORES = (
     ("Luis Ramírez", "315 690 3388", "LUIS", "LR"),
 )
 PERIODICIDADES = ("", "", "", "", "", " D", " S-D", " L-V", " L-S", " miércoles, sábado y domingo")
-ENCABEZADO = ["N°", "NOMBRE", "DIRECCION", "TIE", "PT", "RUTA"]
+# Como la Figura 12 del Anexo D: el N°, la marca de El Tiempo y el código de ruta no tienen encabezado.
+ENCABEZADO = [None, "NOMBRE", "DIRECCION", None, "PT", None]
 POR_HOJA = 18
 
 
@@ -78,12 +80,17 @@ def _guardar(ruta: Path, hojas: dict[str, list[list]]) -> Path:
     libro = Workbook()
     libro.remove(libro.active)
     for titulo, filas in hojas.items():
+        # Como el archivo real: dos listas lado a lado (A-F y H-M), separadas por la columna G.
         hoja = libro.create_sheet(titulo)
-        hoja.append(ENCABEZADO)
-        for fila in filas:
-            hoja.append(fila)
-        hoja.column_dimensions["B"].width = 42
-        hoja.column_dimensions["C"].width = 30
+        mitad = (len(filas) + 1) // 2
+        izquierda, derecha = filas[:mitad], filas[mitad:]
+        hoja.append(ENCABEZADO + [None] + ENCABEZADO)
+        for k, fila in enumerate(izquierda):
+            hoja.append(fila + [None] + (derecha[k] if k < len(derecha) else []))
+        for columna in ("B", "I"):
+            hoja.column_dimensions[columna].width = 42
+        for columna in ("C", "J"):
+            hoja.column_dimensions[columna].width = 30
     libro.save(ruta)
     return ruta
 

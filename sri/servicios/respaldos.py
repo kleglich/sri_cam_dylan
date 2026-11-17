@@ -11,6 +11,7 @@
 from __future__ import annotations
 
 import shutil
+from contextlib import contextmanager
 import sqlite3
 import tempfile
 from datetime import date, datetime
@@ -22,7 +23,7 @@ from ..datos.base_datos import BaseDatos
 from ..datos.daos import EventoDAO, RespaldoDAO
 from ..dominio.modelos import Respaldo, Sesion
 from ..seguridad import Cifrador
-from ..util import DatosInvalidos, ErrorNegocio
+from ..util import Conflicto, DatosInvalidos, ErrorNegocio
 from .auditoria import AuditoriaServicio
 from .autenticacion import AutenticacionServicio
 
@@ -71,6 +72,8 @@ class RespaldoServicio:
         dias_drive = self._dias(drive[0].fecha) if drive else None
         ultimo = self.eventos.ultimo(("RESPALDO_DIARIO", "RESPALDO_FALLIDO"))
         limite = int(self._ajustes.get("dias_copia_drive", 7))
+        verificado = self.eventos.ultimo(("RESPALDO_VERIFICADO",))
+        dias_verificacion = self._dias(verificado["fecha"]) if verificado else None
         return {
             "ultimo_diario": diario[0].fecha if diario else None,
             "ultimo_drive": drive[0].fecha if drive else None,
@@ -79,6 +82,10 @@ class RespaldoServicio:
             "drive_vencido": dias_drive is None or dias_drive > limite,
             "fallo_diario": bool(ultimo and ultimo["tipo"] == "RESPALDO_FALLIDO"),
             "fecha_fallo": ultimo["fecha"] if ultimo and ultimo["tipo"] == "RESPALDO_FALLIDO" else None,
+            "ultima_verificacion": verificado["fecha"] if verificado else None,
+            "dias_verificacion": dias_verificacion,
+            "verificacion_vencida": bool(diario or drive)
+            and (dias_verificacion is None or dias_verificacion > int(self._ajustes.get("dias_verificacion", 30))),
         }
 
     def avisos(self) -> list[str]:
@@ -98,6 +105,16 @@ class RespaldoServicio:
                     f"Han pasado {estado['dias_drive']} días desde la última copia en Google Drive. "
                     "La Gerencia debe copiar el último respaldo (RN-09)."
                 )
+        if estado["verificacion_vencida"]:
+            cuando = (
+                "Aún no se ha verificado ningún respaldo"
+                if estado["dias_verificacion"] is None
+                else f"Han pasado {estado['dias_verificacion']} días sin verificar un respaldo"
+            )
+            avisos.append(
+                f"{cuando}. La Gerencia debe usar «Verificar respaldo» una vez al mes "
+                "(prueba de restauración, sección 6.6)."
+            )
         return avisos
 
     # ------------------------------------------------------------------ #
@@ -148,6 +165,15 @@ class RespaldoServicio:
         self.auditoria.registrar("RESPALDO", f"Respaldo creado en {ruta.name}", sesion.usuario_id)
         return ruta
 
+    def crear_antes_de_importar(self, sesion: Sesion) -> Path:
+        """Respaldo de seguridad que quien importa (Secretaría) puede crear antes de cargar un listado.
+        Crear una copia no expone datos ni cambia nada; restaurarla sigue siendo solo de la Gerencia."""
+        self.auth.exigir(sesion, "RF-01")
+        marca = datetime.now().strftime("%Y%m%d_%H%M%S")
+        ruta = self._generar(directorio_respaldos(self.config) / f"sri_antes_de_importar_{marca}.sribak", sesion.usuario_id, "MANUAL")
+        self.auditoria.registrar("RESPALDO", f"Respaldo previo a la importación: {ruta.name}", sesion.usuario_id)
+        return ruta
+
     def copiar_a_drive(self, sesion: Sesion, carpeta: str | Path) -> Path:
         """Copia semanal (RN-09): el último respaldo, ya cifrado, a la carpeta de Google Drive."""
         self.auth.exigir(sesion, "RF-07")
@@ -177,46 +203,11 @@ class RespaldoServicio:
     def restaurar(self, sesion: Sesion, archivo: str | Path) -> Path:
         self.auth.exigir(sesion, "RF-07")
         origen = Path(archivo)
-        if not origen.exists() or not origen.is_file():
-            raise DatosInvalidos("El archivo de respaldo no existe.")
         if self.bd.conexion.in_transaction:
             raise ErrorNegocio("Hay una operación en curso; intente restaurar de nuevo.")
-        try:
-            datos = self.cifrador.descifrar_bytes(origen.read_bytes())
-        except OSError as error:
-            raise ErrorNegocio("No se pudo leer el archivo de respaldo.") from error
-
-        temporal = None
-        try:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".db", dir=self.bd.ruta.parent) as archivo:
-                archivo.write(datos)
-                temporal = Path(archivo.name)
-            copia = sqlite3.connect(str(temporal))
-            try:
-                resultado = copia.execute("PRAGMA integrity_check").fetchone()
-                if not resultado or resultado[0] != "ok":
-                    raise DatosInvalidos("El respaldo está dañado y no supera la verificación de integridad.")
-                tablas = {
-                    f[0]
-                    for f in copia.execute(
-                        "SELECT name FROM sqlite_master WHERE type = 'table'"
-                    ).fetchall()
-                }
-                requeridas = {"usuario", "suscriptor", "ruta", "entrega", "distribuidor"}
-                if not requeridas.issubset(tablas):
-                    raise DatosInvalidos("El archivo no corresponde a un respaldo del SRI.")
-                self.bd.conexion.execute("PRAGMA wal_checkpoint(TRUNCATE)")
-                self.bd.restaurar_desde(copia)
-            finally:
-                copia.close()
-        except sqlite3.Error as error:
-            raise ErrorNegocio("No se pudo restaurar la base de datos.") from error
-        finally:
-            if temporal and temporal.exists():
-                try:
-                    temporal.unlink()
-                except OSError:
-                    pass
+        with self._copia_validada(origen) as copia:
+            self.bd.conexion.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+            self.bd.restaurar_desde(copia)
 
         if not self.bd.verificar_integridad():
             raise ErrorNegocio("La base de datos restaurada no supera la verificación de integridad.")
@@ -227,7 +218,67 @@ class RespaldoServicio:
         self.auditoria.registrar("RESPALDO", f"Base restaurada desde {origen.name}", None)
         return origen
 
+    def verificar(self, sesion: Sesion, archivo: str | Path) -> dict:
+        """Prueba de restauración sin reemplazar la base (sección 6.6, rutina mensual)."""
+        self.auth.exigir(sesion, "RF-07")
+        origen = Path(archivo)
+        with self._copia_validada(origen) as copia:
+            suscriptores = copia.execute("SELECT COUNT(*) FROM suscriptor").fetchone()[0]
+            entregas, ultima = copia.execute("SELECT COUNT(*), MAX(fecha) FROM entrega").fetchone()
+        self.auditoria.registrar("RESPALDO_VERIFICADO", f"Respaldo {origen.name} verificado: se puede restaurar", sesion.usuario_id)
+        return {"archivo": origen.name, "suscriptores": suscriptores, "entregas": entregas, "ultima_entrega": ultima}
+
+    def guardar_copia_clave(self, sesion: Sesion, carpeta: str | Path) -> Path:
+        """Copia sri.key a otra carpeta (por ejemplo, una USB): sin ella no se abre ningún respaldo."""
+        self.auth.exigir(sesion, "RF-07")
+        carpeta = Path(carpeta) if carpeta else None
+        if not carpeta or not carpeta.is_dir():
+            raise DatosInvalidos("Elija una carpeta disponible, por ejemplo la de la memoria USB.")
+        clave = self.cifrador.ruta_clave.read_bytes()
+        destino = carpeta / "sri.key"
+        if destino.exists() and destino.read_bytes() != clave:
+            raise Conflicto("En esa carpeta ya hay otra clave sri.key distinta; no se reemplaza. Elija otra carpeta.")
+        try:
+            destino.write_bytes(clave)
+        except OSError as error:
+            raise ErrorNegocio("No se pudo escribir la clave en esa carpeta. Verifique que la USB esté conectada.") from error
+        self.auditoria.registrar("CLAVE_COPIADA", "Copia de la clave guardada fuera del equipo", sesion.usuario_id)
+        return destino
+
     # ------------------------------------------------------------------ #
+    @contextmanager
+    def _copia_validada(self, origen: Path):
+        """Descifra el respaldo en un archivo temporal, verifica su integridad y entrega la conexión."""
+        if not origen.exists() or not origen.is_file():
+            raise DatosInvalidos("El archivo de respaldo no existe.")
+        try:
+            datos = self.cifrador.descifrar_bytes(origen.read_bytes())
+        except OSError as error:
+            raise ErrorNegocio("No se pudo leer el archivo de respaldo.") from error
+        temporal = copia = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".db", dir=self.bd.ruta.parent) as archivo:
+                archivo.write(datos)
+                temporal = Path(archivo.name)
+            copia = sqlite3.connect(str(temporal))
+            resultado = copia.execute("PRAGMA integrity_check").fetchone()
+            if not resultado or resultado[0] != "ok":
+                raise DatosInvalidos("El respaldo está dañado y no supera la verificación de integridad.")
+            tablas = {f[0] for f in copia.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+            if not {"usuario", "suscriptor", "ruta", "entrega", "distribuidor"}.issubset(tablas):
+                raise DatosInvalidos("El archivo no corresponde a un respaldo del SRI.")
+            yield copia
+        except sqlite3.Error as error:
+            raise ErrorNegocio("No se pudo leer o restaurar el respaldo.") from error
+        finally:
+            if copia is not None:
+                copia.close()
+            if temporal and temporal.exists():
+                try:
+                    temporal.unlink()
+                except OSError:
+                    pass
+
     def _generar(self, destino: Path, usuario_id: int, tipo: str) -> Path:
         destino.parent.mkdir(parents=True, exist_ok=True)
         # Se registra antes de la copia para que el propio respaldo conserve su

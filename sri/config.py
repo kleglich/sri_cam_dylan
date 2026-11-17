@@ -21,14 +21,6 @@ CONFIG_DEFECTO = {
         ".xls",
         ".csv"
     ],
-    "columnas_obligatorias": [
-        "numero",
-        "nombre",
-        "direccion",
-        "tie",
-        "pt",
-        "ruta"
-    ],
     "mapeo_columnas": {
         "numero": [
             "n°",

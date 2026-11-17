@@ -59,7 +59,9 @@ Este manual describe el uso diario de la aplicación para los dos roles del proy
 | Reporte diario de entregas (RF-03) | No | Sí |
 | Respaldos, Google Drive y restauración (RF-07) | No | Sí |
 
-**Cambiar la contraseña:** pulse **Mi contraseña** en la parte inferior del menú, escriba la actual y la nueva (mínimo 8 caracteres). Cambie `Sri2026*` antes de cargar información real.
+**Cambiar la contraseña:** pulse **Mi contraseña** en la parte inferior del menú, escriba la actual y la nueva. La nueva debe tener al menos 8 caracteres y no puede ser la actual ni `Sri2026*`.
+
+**Primer ingreso:** si alguien entra con la contraseña de demostración `Sri2026*`, el sistema le pide cambiarla antes de continuar; si cierra esa ventana, la sesión se cierra.
 
 ---
 
@@ -83,14 +85,15 @@ Se usa para la **carga inicial** del Excel de la empresa y, si hace falta, para 
 
 ### 4.1 Cómo debe estar el archivo
 
-Un libro `.xlsx` o `.xls` con **una hoja por distribuidor** y estas columnas en cada hoja:
+Un libro `.xlsx` o `.xls` con **una hoja por distribuidor**. Cada hoja puede tener **una o varias listas lado a lado** (por ejemplo, A a F y H a M), y cada lista tiene estas columnas, como el archivo de la empresa (Anexo D, Figura 12):
 
-| N° | NOMBRE | DIRECCION | TIE | PT | RUTA |
+| A (sin encabezado) | B: NOMBRE | C: DIRECCION | D (sin encabezado) | E: PT | F (sin encabezado) |
 |---|---|---|---|---|---|
 | 1 | Ana Pérez | Calle 10 # 5-20 | X | | CP |
 | 2 | Luis Gómez **S-D** | Avenida 3 # 2-10 | X | X | CP |
 
-- **TIE** = El Tiempo y **PT** = Portafolio: se marcan con «X».
+- Cada lista **necesita los encabezados NOMBRE y DIRECCION**. El número (A), la marca de El Tiempo (D) y el código de ruta (F) se reconocen por su posición aunque no tengan encabezado; si lo tienen (N°, TIE, RUTA), también sirven.
+- **TIE** = El Tiempo (columna D) y **PT** = Portafolio: se marcan con «X».
 - **Periodicidad** escrita junto al nombre: sin anotación = todos los días; `D` = domingo; `S-D` = sábado y domingo; `L-V` = lunes a viernes; `L-S` = lunes a sábado; o una lista como «miércoles, sábado y domingo».
 - **RUTA**: código con las iniciales del distribuidor (CP = Carlos Pérez).
 - La fila de encabezados puede estar después de un título; se busca en las primeras filas de cada hoja. Si el listado usa otros encabezados, agréguelos en `config.json` → `mapeo_columnas`.
@@ -98,11 +101,13 @@ Un libro `.xlsx` o `.xls` con **una hoja por distribuidor** y estas columnas en 
 ### 4.2 Importar
 
 1. Registre primero los **distribuidores** (sección 8), para que los códigos de ruta se asocien solos.
-2. Abra **Importar listado de repartidores**, pulse **Seleccionar…** y elija el archivo.
-3. Pulse **Importar** y revise el resumen: **leídos**, **nuevos**, **actualizados**, **rechazados** y **para revisar**.
-4. En la tabla inferior:
-   - **Rechazado** (rojo): la fila no se cargó; se indica la hoja, la fila y el motivo (sin dirección, sin producto marcado…).
-   - **Revisar** (ámbar): se cargó, pero conviene confirmarlo con la Gerencia.
+2. Abra **Importar listado de repartidores** y pulse **Crear respaldo ahora** en el recuadro amarillo: si el archivo trae algo inesperado, la Gerencia puede volver al estado anterior.
+3. Pulse **Seleccionar…**, elija el archivo y pulse **Importar**.
+4. Si hubo rechazos o casos para revisar, se abre la ventana **Revisar con la Gerencia** con la lista completa:
+   - **Rechazado**: la fila no se cargó; se indica la hoja (y la lista, si hay varias), la fila y el motivo.
+   - **Para revisar**: se cargó, pero conviene confirmarlo con la Gerencia.
+   - **Exportar a Excel (CSV)…** guarda la lista con columnas para anotar si se revisó y qué se decidió.
+5. Si una columna con datos no pertenece a ninguna lista (por ejemplo, teléfonos a la derecha sin encabezado NOMBRE), el sistema lo avisa en **Para revisar** con la letra de la columna, para que ningún dato se pierda sin aviso.
 
 ### 4.3 Qué hace el sistema
 
@@ -184,7 +189,12 @@ Notas: no se admiten fechas futuras (RN-04); cada suscriptor tiene un solo estad
 
 ![Consulta del historial](capturas/07_consultas.png)
 
-Filtre por suscriptor o dirección, ruta, distribuidor, rango de fechas y estado, y pulse **Buscar**. **Doble clic** abre el historial completo del suscriptor. La búsqueda por texto revisa todos los suscriptores, incluidos los retirados.
+En **Buscar en** elija:
+
+- **Entregas**: filtre por suscriptor o dirección, ruta, distribuidor, rango de fechas y estado de la entrega.
+- **Suscriptores**: encuentra a todos los suscriptores, **aunque no tengan entregas**; el estado filtra por ACTIVO o RETIRADO y las fechas no se usan.
+
+**Doble clic** abre la **ficha del suscriptor**: estado (activo desde su ingreso, o retirado desde tal fecha), direcciones, periodicidad, productos, sus **novedades de ingreso, cambio y retiro** y sus entregas.
 
 ---
 
@@ -222,7 +232,17 @@ La pantalla muestra el último respaldo diario y la última copia en Drive: en v
 
 > El respaldo **no** incluye la clave `datos/sri.key`. Guárdela por separado y fuera del computador: sin ella no se pueden leer los datos ni los respaldos, tampoco los de Google Drive.
 
-Pruebe **cada mes** que un respaldo se puede restaurar en un equipo de prueba (sección 6.6 del informe).
+### Verificar un respaldo (cada mes)
+
+Pulse **Verificar respaldo…** y elija un `.sribak` (de `respaldos` o de Google Drive). El sistema lo descifra y revisa su integridad **sin reemplazar la base actual**, e informa cuántos suscriptores y entregas tiene. Es la prueba mensual de restauración de la sección 6.6. Si pasan más de 30 días sin verificar, aparece un aviso al iniciar sesión.
+
+### Guardar una copia de la clave
+
+Pulse **Guardar copia de la clave…** y elija una memoria USB. El sistema copia `sri.key`; si en esa carpeta ya hay otra clave distinta, no la reemplaza. Guarde la USB fuera del computador.
+
+### Depuración anual (Ley 1581)
+
+Una vez al año, indique el plazo (por ejemplo, 12 meses) y pulse **Depurar…**. Los suscriptores **retirados hace más de ese plazo** quedan anonimizados: se borran su nombre, sus direcciones y los textos de sus novedades, pero su registro y sus entregas se conservan para las estadísticas (RN-12). No se puede deshacer en la base actual; los respaldos anteriores conservan esos datos hasta que se reemplazan.
 
 ---
 

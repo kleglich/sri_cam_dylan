@@ -20,6 +20,7 @@ PERMISOS = {
     "RF-07": {"Gerencia"},
     "RF-08": {"Secretaria", "Gerencia"},
     "RF-09": {"Secretaria"},
+    "DEPURACION": {"Gerencia"},  # depuración anual de datos personales (Ley 1581, sección 6.6)
 }
 
 TIPOS_NOVEDAD = ("INGRESO", "RETIRO", "CAMBIO")
@@ -40,6 +41,7 @@ class Usuario:
 @dataclass(frozen=True)
 class Sesion:
     usuario: Usuario
+    cambiar_contrasena: bool = False  # entró con la contraseña de demostración
 
     @property
     def usuario_id(self) -> int:

@@ -9,7 +9,7 @@ from pathlib import Path
 from tkinter import filedialog, ttk
 
 from ..config import directorio_respaldos, guardar_config
-from .estilos import COLORES
+from .estilos import COLORES, FUENTE
 from .widgets import (
     cabecera_vista,
     confirmar,
@@ -88,11 +88,41 @@ class VistaRespaldos(tk.Frame):
         ttk.Button(segunda, text="Abrir carpeta", style="Secundario.TButton", command=self._abrir_carpeta).pack(
             side="right"
         )
+        tercera = tk.Frame(panel, bg=COLORES["panel"])
+        tercera.pack(fill="x", pady=(10, 0))
+        ttk.Button(tercera, text="Verificar respaldo…", style="Secundario.TButton", command=self._verificar).pack(side="left")
+        ttk.Button(tercera, text="Guardar copia de la clave…", style="Secundario.TButton", command=self._copiar_clave).pack(
+            side="left", padx=(8, 0)
+        )
+        texto(
+            tercera,
+            "Verifique un respaldo cada mes y guarde la clave sri.key en una USB fuera del computador.",
+            tamano=8,
+            color=COLORES["texto_suave"],
+        ).pack(side="left", padx=(12, 0))
 
         self.estado = texto(panel, "", tamano=9, color=COLORES["texto_suave"])
         self.estado.pack(anchor="w", pady=(12, 0))
         self.norma = texto(panel, "", tamano=9, color=COLORES["texto_suave"])
         self.norma.pack(anchor="w", pady=(6, 0))
+        self.verificacion = texto(panel, "", tamano=9, color=COLORES["texto_suave"])
+        self.verificacion.pack(anchor="w", pady=(6, 0))
+
+        depuracion = tk.Frame(panel, bg="#f3f8fa")
+        depuracion.pack(fill="x", pady=(14, 0))
+        texto(
+            depuracion,
+            "Depuración anual (Ley 1581): anonimizar a los suscriptores retirados hace más de",
+            tamano=9,
+            fondo="#f3f8fa",
+        ).pack(side="left", padx=(12, 6), pady=8)
+        self.meses = ttk.Spinbox(depuracion, from_=1, to=120, width=5, font=(FUENTE, 10))
+        self.meses.set(12)
+        self.meses.pack(side="left", pady=8)
+        texto(depuracion, "meses", tamano=9, fondo="#f3f8fa").pack(side="left", padx=(6, 0))
+        ttk.Button(depuracion, text="Depurar…", style="Secundario.TButton", command=self._depurar).pack(
+            side="right", padx=8, pady=6
+        )
 
     def _construir_historial(self) -> None:
         panel = tarjeta(self, relleno=14)
@@ -159,6 +189,17 @@ class VistaRespaldos(tk.Frame):
                 fg=COLORES["exito"],
             )
         self._carpeta_drive = estado["carpeta_drive"]
+        if estado["dias_verificacion"] is None:
+            self.verificacion.configure(
+                text="Aún no se ha verificado ningún respaldo. Use «Verificar respaldo» una vez al mes.",
+                fg=COLORES["aviso"],
+            )
+        else:
+            self.verificacion.configure(
+                text=f"Última verificación de un respaldo: {fecha_hora_legible(estado['ultima_verificacion'])}"
+                + (" · ya pasó el mes: verifique uno ahora." if estado["verificacion_vencida"] else "."),
+                fg=COLORES["aviso"] if estado["verificacion_vencida"] else COLORES["exito"],
+            )
 
     def _copiar_drive(self) -> None:
         configurada = self.ctx.config.get("respaldo", {}).get("carpeta_google_drive", "")
@@ -247,6 +288,74 @@ class VistaRespaldos(tk.Frame):
             return
         self.app.reiniciar_sesion(
             "La base de datos se restauró correctamente. Por seguridad, inicie sesión de nuevo."
+        )
+
+    def _verificar(self) -> None:
+        archivo = filedialog.askopenfilename(
+            parent=self,
+            title="Elegir el respaldo que se va a verificar",
+            initialdir=str(directorio_respaldos(self.ctx.config)),
+            filetypes=[("Respaldo del SRI", "*.sribak"), ("Todos los archivos", "*.*")],
+        )
+        if not archivo:
+            return
+        try:
+            resultado = self.ctx.respaldos.verificar(self.sesion, archivo)
+        except Exception as error:  # noqa: BLE001
+            mostrar_error(self, f"El respaldo NO se puede restaurar.\n\n{error}")
+            return
+        self._cargar()
+        ultima = resultado["ultima_entrega"]
+        mostrar_info(
+            self,
+            f"El respaldo {resultado['archivo']} se descifró y está íntegro: se puede restaurar.\n\n"
+            f"Suscriptores: {resultado['suscriptores']}\nEntregas: {resultado['entregas']}"
+            + (f"\nÚltima entrega registrada: {ultima[8:10]}/{ultima[5:7]}/{ultima[:4]}" if ultima else "")
+            + "\n\nLa base de datos actual no se modificó.",
+            "Respaldo verificado",
+        )
+
+    def _copiar_clave(self) -> None:
+        carpeta = filedialog.askdirectory(parent=self, title="Elija la memoria USB o la carpeta donde guardar la clave")
+        if not carpeta:
+            return
+        try:
+            destino = self.ctx.respaldos.guardar_copia_clave(self.sesion, carpeta)
+        except Exception as error:  # noqa: BLE001
+            mostrar_error(self, str(error))
+            return
+        mostrar_info(
+            self,
+            f"Copia de la clave guardada en:\n{destino}\n\n"
+            "Guarde esa memoria fuera del computador y en un lugar seguro: con la clave y un respaldo "
+            "se recuperan todos los datos.",
+            "Clave guardada",
+        )
+
+    def _depurar(self) -> None:
+        try:
+            meses = int(self.meses.get())
+        except ValueError:
+            mostrar_error(self, "Indique el plazo en meses (un número entre 1 y 120).")
+            return
+        if not confirmar(
+            self,
+            f"Se borrarán el nombre, las direcciones y las novedades de los suscriptores retirados hace más de "
+            f"{meses} meses. Sus registros y entregas se conservan para las estadísticas.\n\n"
+            "Esto no se puede deshacer en la base actual. ¿Continuar?",
+            "Depuración anual",
+        ):
+            return
+        try:
+            cantidad = self.ctx.suscripciones.depurar_retirados(self.sesion, meses)
+        except Exception as error:  # noqa: BLE001
+            mostrar_error(self, str(error))
+            return
+        mostrar_info(
+            self,
+            f"Suscriptores anonimizados: {cantidad}.\n\nLos respaldos anteriores todavía tienen esos datos; "
+            "desaparecen a medida que se reemplazan los 7 respaldos diarios.",
+            "Depuración anual",
         )
 
     def _abrir_carpeta(self) -> None:

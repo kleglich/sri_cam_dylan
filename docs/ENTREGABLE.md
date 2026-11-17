@@ -16,7 +16,7 @@ Este documento funciona como acta de entrega: enumera los artefactos, relaciona 
 | Base de datos de demostración | Se genera con `python herramientas\preparar_demo.py` (el `.rar` no incluye `sri.key` ni la base cifrada con ella) | `datos/sri_cam_dylan.db` |
 | Listado de repartidores de ejemplo (formato del Anexo D) | Entregado | `datos_ejemplo/` |
 | Respaldos cifrados de demostración (manual y diario) | Entregados | `respaldos/` |
-| Pruebas automatizadas | 26/26 OK | `pruebas/test_sri.py` |
+| Pruebas automatizadas | 31/31 OK | `pruebas/test_sri.py` |
 | Capturas de pantalla | 10 pantallas | `docs/capturas/` |
 | Manual de usuario | Entregado | `docs/MANUAL_USUARIO.md` |
 | Documento de arquitectura | Entregado | `docs/ARQUITECTURA.md` |
@@ -69,14 +69,14 @@ Las bases de datos y los respaldos de la versión anterior se **migran automáti
 
 | RF | Implementación principal | Interfaz | Pruebas automatizadas | Evidencia |
 |---|---|---|---|---|
-| **RF-01** Importar el listado de repartidores | `servicios/importacion.py`, `servicios/lectores.py`, `dominio/periodicidad.py`, `config.json` | `vista_importacion.py` | `test_listado_multihoja_periodicidad_productos_y_rutas`, `test_rn07_dos_direcciones_es_un_solo_suscriptor`, `test_importacion_repetida_no_duplica`, `test_archivo_sin_columnas_obligatorias_no_modifica`, `test_archivo_danado_mensaje_claro_y_no_modifica`, `test_archivo_csv` | `capturas/03_importar.png` |
+| **RF-01** Importar el listado de repartidores | `servicios/importacion.py`, `servicios/lectores.py`, `dominio/periodicidad.py`, `config.json` | `vista_importacion.py` | `test_rf01_formato_real_dos_listas_y_columnas_sin_encabezado`, `test_listado_multihoja_periodicidad_productos_y_rutas`, `test_rn07_dos_direcciones_es_un_solo_suscriptor`, `test_importacion_repetida_no_duplica`, `test_archivo_sin_columnas_obligatorias_no_modifica`, `test_archivo_danado_mensaje_claro_y_no_modifica`, `test_archivo_csv` | `capturas/03_importar.png` |
 | **RF-02** Asignar y modificar rutas; ruta imprimible | `servicios/operativo.py` (`crear_ruta`, `actualizar_ruta`, `asignar_ruta`, `secciones_ruta`, `exportar_ruta_html`) | `vista_rutas.py` | `test_rutas_y_rn01`, `test_rf02_ruta_imprimible_por_secciones` | `capturas/05_rutas.png` |
 | **RF-03** Reporte diario de entregas | `servicios/consultas.py` (`generar_reporte`, `exportar_csv`, `exportar_html`), `EntregaDAO.estadisticas_fecha` | `vista_reportes.py` | `test_rn11_programacion_y_cierre_del_dia`, `test_reporte_sin_programadas_y_exportes` | `capturas/08_reportes.png` |
 | **RF-04** Gestionar distribuidores | `servicios/operativo.py` | `vista_distribuidores.py` | `test_rutas_y_rn01` (RN-02), `test_rn08_permisos_por_rol` | `capturas/06_distribuidores.png` |
 | **RF-05** Registrar novedad de entrega y cerrar el día | `servicios/operativo.py` (`registrar_entrega`, `cerrar_dia`), `EntregaDAO.marcar_entregadas` | `vista_entregas.py` | `test_rn03_rn04_entregas`, `test_rn11_programacion_y_cierre_del_dia` | `capturas/04_entregas.png` |
-| **RF-06** Consultar historial | `servicios/consultas.py`, `SuscriptorDAO.listar` | `vista_consultas.py`, `dialogos.py` | `test_consultas_filtros_e_historial`, `test_busqueda_encuentra_suscriptores_fuera_del_limite` | `capturas/07_consultas.png` |
-| **RF-07** Respaldo diario, Google Drive y restauración | `servicios/respaldos.py`, `seguridad.py`, `presentacion/app.py` (respaldo al salir y avisos) | `vista_respaldos.py` | `test_rn09_respaldo_diario_unico_y_conserva_siete`, `test_rf07_copia_drive_y_avisos`, `test_rf07_fallo_del_respaldo_diario_se_avisa`, `test_respaldo_cifrado_y_restauracion` | `capturas/09_respaldos.png` |
-| **RF-08** Iniciar sesión y roles | `servicios/autenticacion.py`, `dominio/modelos.py` (`PERMISOS`) | `login.py`, `principal.py` | `test_login_valido_e_invalido`, `test_rn08_permisos_por_rol` | `capturas/01_login.png` |
+| **RF-06** Consultar historial | `servicios/consultas.py`, `SuscriptorDAO.listar` | `vista_consultas.py`, `dialogos.py` | `test_consultas_filtros_e_historial`, `test_busqueda_encuentra_suscriptores_fuera_del_limite`, `test_rf06_buscar_suscriptores_sin_entregas_y_ficha` | `capturas/07_consultas.png` |
+| **RF-07** Respaldo diario, Google Drive y restauración | `servicios/respaldos.py`, `seguridad.py`, `presentacion/app.py` (respaldo al salir y avisos) | `vista_respaldos.py` | `test_rn09_respaldo_diario_unico_y_conserva_siete`, `test_rf07_copia_drive_y_avisos`, `test_rf07_fallo_del_respaldo_diario_se_avisa`, `test_rf07_verificar_respaldo_y_copia_de_la_clave`, `test_respaldo_cifrado_y_restauracion` | `capturas/09_respaldos.png` |
+| **RF-08** Iniciar sesión y roles | `servicios/autenticacion.py`, `dominio/modelos.py` (`PERMISOS`) | `login.py`, `principal.py` | `test_login_valido_e_invalido`, `test_rn08_permisos_por_rol`, `test_contrasenas_y_bitacora_sin_lo_escrito_en_usuario` | `capturas/01_login.png` |
 | **RF-09** Registrar novedades de suscripción | `servicios/suscripciones.py`, `NovedadSuscripcionDAO` | `vista_novedades.py` | `test_rf09_ingreso_validaciones_y_aviso`, `test_rf09_cambio`, `test_rn12_retiro_no_borra_y_sale_de_la_programacion` | `capturas/10_novedades.png` |
 
 ---
@@ -96,7 +96,7 @@ Las bases de datos y los respaldos de la versión anterior se **migran automáti
 | **RN-09** | Respaldo diario automático, se conservan 7, copia semanal a Google Drive | `respaldo_automatico`, `_depurar_diarios`, `copiar_a_drive`, `avisos` | `test_rn09_respaldo_diario_unico_y_conserva_siete`, `test_rf07_copia_drive_y_avisos` |
 | **RN-10** | Datos personales solo con fines logísticos | Cifrado de campos, bitácora sin datos personales, aviso en la ruta impresa | `test_bitacora_sin_datos_personales` |
 | **RN-11** | Entregas programadas por periodicidad; sin novedad al cierre = cumplidas | `PROGRAMADO` / `RUTA_DEL_DIA` en `daos.py`, `marcar_entregadas` | `test_rn11_programacion_y_cierre_del_dia` |
-| **RN-12** | Un retiro marca inactivo; no se borra | `registrar_retiro` (`estado`, `fecha_retiro`) | `test_rn12_retiro_no_borra_y_sale_de_la_programacion` |
+| **RN-12** | Un retiro marca inactivo; no se borra | `registrar_retiro` (`estado`, `fecha_retiro`); la depuración anual anonimiza sin borrar | `test_rn12_retiro_no_borra_y_sale_de_la_programacion`, `test_depuracion_anual_anonimiza_retirados_antiguos` |
 
 ---
 
@@ -119,7 +119,7 @@ python -m unittest discover -s pruebas -v
 ```
 
 ```text
-Ran 26 tests in ~10 s
+Ran 31 tests in ~11 s
 OK
 [RNF-02: importación de 10.000 registros en 2.23 s]
 ```

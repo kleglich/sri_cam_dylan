@@ -10,7 +10,7 @@ Proyecto Integrador · Universidad de Santander · 2026. Alineado con el informe
 
 | Requisito | Descripción | Estado |
 |---|---|---|
-| RF-01 | Importar el listado de repartidores (una hoja por distribuidor): separar la periodicidad del nombre, productos TIE/PT, código de ruta → distribuidor, suscriptores con dos direcciones, rechazos justificados y casos para revisar | Implementado |
+| RF-01 | Importar el listado de repartidores tal como lo tiene la empresa (una hoja por distribuidor, listas lado a lado, N°/TIE/ruta sin encabezado): separar la periodicidad del nombre, productos TIE/PT, código de ruta → distribuidor, suscriptores con dos direcciones, rechazos justificados y casos para revisar | Implementado |
 | RF-02 | Asignar y modificar rutas (una ruta, un distribuidor) y generar la **ruta imprimible** por distribuidor | Implementado |
 | RF-03 | Reporte diario de entregas **programadas**, efectividad y novedades del día, exportable a CSV y HTML/PDF | Implementado |
 | RF-04 | Gestionar distribuidores (crear, consultar, actualizar y dar de baja) | Implementado |
@@ -80,7 +80,7 @@ sri_cam_dylan/
 │   ├── datos/                  Esquema SQL, migración, conexión y DAO
 │   ├── servicios/              Autenticación, importación, suscripciones, operación, consultas, respaldos, auditoría
 │   └── presentacion/           Login, menú por rol y vistas
-├── pruebas/test_sri.py         26 pruebas automatizadas
+├── pruebas/test_sri.py         31 pruebas automatizadas
 ├── herramientas/               Generación del listado de ejemplo y preparación de la demo
 ├── datos_ejemplo/              Listados de repartidores de ejemplo
 ├── datos/                      Base SQLite y clave local (no versionar)
@@ -95,7 +95,7 @@ sri_cam_dylan/
 python -m unittest discover -s pruebas -v
 ```
 
-Resultado esperado: **26 pruebas OK**. Cubren autenticación y permisos; periodicidad; importación multihoja, dos direcciones, códigos de ruta, archivo dañado y CSV; novedades de suscripción (ingreso, retiro, cambio); programación y cierre del día; reporte sobre programadas y exportes; ruta imprimible; búsqueda sobre datos cifrados; respaldo diario, retención de 7, Google Drive, avisos y restauración; migración de la base anterior, y rendimiento RNF-02 (10 000 registros en ≈2,2 s; una novedad en < 2 s).
+Resultado esperado: **31 pruebas OK**. Cubren autenticación, permisos, contraseñas y bitácora; periodicidad; importación multihoja con el formato real (listas lado a lado, columnas sin encabezado y aviso de datos sin leer), dos direcciones, códigos de ruta, archivo dañado y CSV; novedades de suscripción (ingreso, retiro, cambio); programación y cierre del día; reporte sobre programadas y exportes; ruta imprimible; búsqueda sobre datos cifrados; respaldo diario, retención de 7, Google Drive, verificación de respaldos, copia de la clave, avisos y restauración; consulta de suscriptores sin entregas y ficha con su estado; depuración anual; migración de la base anterior, y rendimiento RNF-02 (10 000 registros en ≈2,2 s; una novedad en < 2 s).
 
 Las pruebas usan bases temporales y nunca modifican la base de demostración.
 

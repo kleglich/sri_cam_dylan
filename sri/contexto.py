@@ -73,6 +73,7 @@ class Contexto:
             self.cifrador,
             self.auth,
             self.auditoria,
+            self.entregas,
         )
         self.operativo = OperativoServicio(
             self.distribuidores,

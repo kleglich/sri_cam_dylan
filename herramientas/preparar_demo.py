@@ -20,7 +20,7 @@ if str(RAIZ) not in sys.path:
 
 from generar_datos_demo import DISTRIBUIDORES, generar_archivos  # noqa: E402
 
-from sri.config import cargar_config, directorio_datos  # noqa: E402
+from sri.config import cargar_config, directorio_datos, directorio_respaldos  # noqa: E402
 from sri.contexto import Contexto  # noqa: E402
 from sri.util import formato_fecha  # noqa: E402
 
@@ -103,7 +103,7 @@ def main(reiniciar: bool = False) -> int:
         reporte = contexto.consultas.generar_reporte(gerencia, formato_fecha(ayer))
         print(f"Reporte de ayer: {reporte.total} programadas, efectividad {reporte.porcentaje} %.")
 
-        respaldo = contexto.respaldos.crear(gerencia, RAIZ / "respaldos" / "sri_respaldo_inicial.sribak")
+        respaldo = contexto.respaldos.crear(gerencia, directorio_respaldos(config) / "sri_respaldo_inicial.sribak")
         print(f"Respaldo manual de demostración: {respaldo}")
 
         print("\nDemostración lista.")

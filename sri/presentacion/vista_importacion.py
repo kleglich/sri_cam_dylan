@@ -7,6 +7,7 @@ import tkinter as tk
 from pathlib import Path
 from tkinter import filedialog, ttk
 
+from .dialogos import DialogoCasos
 from .estilos import COLORES, FUENTE
 from .widgets import (
     cabecera_vista,
@@ -59,8 +60,9 @@ class VistaImportacion(tk.Frame):
         texto(panel, "1. Seleccione el archivo", tamano=11, negrita=True).pack(anchor="w")
         texto(
             panel,
-            "Formatos admitidos: .xlsx y .xls. Cada hoja debe tener las columnas N°, nombre, dirección, "
-            "TIE, PT y código de ruta (el mapeo se configura en config.json).",
+            "Formatos admitidos: .xlsx y .xls. Cada hoja puede tener una o varias listas lado a lado; cada lista "
+            "necesita los encabezados NOMBRE y DIRECCION. El N°, la marca de El Tiempo, PT y el código de ruta "
+            "se reconocen aunque no tengan encabezado, como en el archivo de la empresa.",
             tamano=9,
             color=COLORES["texto_suave"],
             wraplength=980,
@@ -102,6 +104,18 @@ class VistaImportacion(tk.Frame):
             color=COLORES["texto_suave"],
         )
         self.estado.pack(anchor="w", pady=(8, 0))
+
+        aviso = tk.Frame(panel, bg="#fff8e6", highlightbackground="#e0b252", highlightthickness=1)
+        aviso.pack(fill="x", pady=(12, 0))
+        texto(
+            aviso,
+            "Cree un respaldo antes de importar: si el archivo trae algo inesperado, la Gerencia puede volver al estado anterior.",
+            tamano=9,
+            fondo="#fff8e6",
+        ).pack(side="left", padx=12, pady=8)
+        ttk.Button(aviso, text="Crear respaldo ahora", style="Secundario.TButton", command=self._respaldo_previo).pack(
+            side="right", padx=8, pady=6
+        )
 
     def _construir_resumen(self) -> None:
         panel = tarjeta(self, relleno=14)
@@ -269,9 +283,18 @@ class VistaImportacion(tk.Frame):
             f"Actualizados: {resumen.actualizados}\nRechazados: {resumen.rechazados}"
         )
         mensaje += f"\nPara revisar con la Gerencia: {len(resumen.revisar)}"
-        if resumen.rechazados or resumen.revisar:
-            mensaje += "\n\nRevise el detalle en la parte inferior."
-        mostrar_info(self, mensaje, "Importación completada")
+        if resumen.rechazos or resumen.revisar:
+            DialogoCasos(self, self.app, resumen, mensaje.replace("\n\n", " ").replace("\n", " · "))
+        else:
+            mostrar_info(self, mensaje, "Importación completada")
+
+    def _respaldo_previo(self) -> None:
+        try:
+            ruta = self.ctx.respaldos.crear_antes_de_importar(self.sesion)
+        except Exception as error:  # noqa: BLE001
+            mostrar_error(self, str(error))
+            return
+        mostrar_info(self, f"Respaldo cifrado creado:\n{ruta.name}\n\nYa puede importar el listado.", "Respaldo creado")
 
     def _fallar(self, error: Exception) -> None:
         self.barra.stop()

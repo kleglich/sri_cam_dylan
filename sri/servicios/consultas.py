@@ -20,8 +20,10 @@ from ..dominio.modelos import (
     ESTADOS_ENTREGA,
     Entrega,
     FilaReporte,
+    NovedadSuscripcion,
     ReporteDiario,
     Sesion,
+    Suscriptor,
 )
 from ..util import DatosInvalidos, formato_fecha, parsear_fecha
 from .autenticacion import AutenticacionServicio
@@ -104,6 +106,28 @@ class ConsultasServicio:
     def historial_suscriptor(self, sesion: Sesion, suscriptor_id: int) -> list[Entrega]:
         self.auth.exigir(sesion, "RF-06")
         return self.entregas.historial_suscriptor(suscriptor_id)
+
+    def ficha_suscriptor(self, sesion: Sesion, suscriptor_id: int) -> tuple[Suscriptor | None, list[NovedadSuscripcion]]:
+        """Datos del suscriptor (con su estado) y sus novedades de ingreso, cambio y retiro (RF-06)."""
+        self.auth.exigir(sesion, "RF-06")
+        return self.suscriptores.obtener(suscriptor_id), self.novedades.listar(suscriptor_id=suscriptor_id)
+
+    def buscar_suscriptores(self, sesion: Sesion, filtros: dict) -> list[Suscriptor]:
+        """RF-06: encuentra suscriptores aunque no tengan entregas registradas."""
+        self.auth.exigir(sesion, "RF-06")
+        estado = filtros.get("estado") or ""
+        if estado and estado not in ("ACTIVO", "RETIRADO"):
+            raise DatosInvalidos("El estado seleccionado no es válido.")
+        limite = int(filtros.get("limite", 500))
+        filas = self.suscriptores.listar(
+            ruta_id=filtros.get("ruta_id") or None, texto=(filtros.get("texto") or "").strip(), limite=-1
+        )
+        if filtros.get("distribuidor_id"):
+            rutas = {r.id for r in self.rutas.listar() if r.distribuidor_id == filtros["distribuidor_id"]}
+            filas = [s for s in filas if s.ruta_id in rutas or s.ruta_fs_id in rutas]
+        if estado:
+            filas = [s for s in filas if s.estado == estado]
+        return filas[:limite]
 
     # ------------------------------------------------------------------ #
     # Reporte diario (RF-03)

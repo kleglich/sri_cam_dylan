@@ -39,7 +39,13 @@ class Aplicacion(tk.Tk):
 
         self.vista = ShellFrame(self, self)
         self.vista.pack(fill="both", expand=True)
-        self.after(300, self._mostrar_avisos)
+        self.after(300, self._pedir_contrasena if sesion.cambiar_contrasena else self._mostrar_avisos)
+
+    def _pedir_contrasena(self) -> None:
+        """Plan de despliegue: no se trabaja con la contraseña de demostración."""
+        from .dialogos import DialogoContrasena
+
+        DialogoContrasena(self, self, obligatorio=True, al_terminar=self._mostrar_avisos)
 
     def _mostrar_avisos(self) -> None:
         """RF-07: un respaldo fallido o una copia en Google Drive vencida no pasan inadvertidos."""

@@ -90,6 +90,18 @@ class PruebasAutenticacion(BaseSRI):
         with self.assertRaises(DatosInvalidos):
             self.ctx.auth.iniciar_sesion("noexiste", "Sri2026*")
 
+    def test_contrasenas_y_bitacora_sin_lo_escrito_en_usuario(self):
+        self.assertTrue(self.secretaria.cambiar_contrasena)  # entró con la de demostración
+        for nueva in ("", "corta", "Sri2026*"):
+            with self.assertRaises(DatosInvalidos):
+                self.ctx.auth.cambiar_contrasena(self.secretaria, "Sri2026*", nueva, nueva)
+        self.ctx.auth.cambiar_contrasena(self.secretaria, "Sri2026*", "Propia-2026", "Propia-2026")
+        self.assertFalse(self.ctx.auth.iniciar_sesion("secretaria", "Propia-2026").cambiar_contrasena)
+        with self.assertRaises(DatosInvalidos):
+            self.ctx.auth.iniciar_sesion("MiClaveSecreta123", "x")  # contraseña escrita en el campo usuario
+        bitacora = " ".join(e["detalle"] for e in self.ctx.auditoria.listar(20))
+        self.assertNotIn("MiClaveSecreta123", bitacora)
+
     def test_rn08_permisos_por_rol(self):
         archivo = self.crear_listado("x.xlsx", {"H": []})
         with self.assertRaises(PermisoDenegado):
@@ -190,6 +202,24 @@ class PruebasImportacion(BaseSRI):
         repetida = self.importar_demo(hojas=hojas)
         self.assertEqual((repetida.importados, repetida.actualizados), (0, 2))
         self.assertEqual(self.ctx.suscriptores.contar(), 1)
+
+    def test_rf01_formato_real_dos_listas_y_columnas_sin_encabezado(self):
+        # Como la Figura 12 del Anexo D: N°, TIE y RUTA sin encabezado; dos listas por hoja; G vacía.
+        encabezado = [None, "NOMBRE", "DIRECCION", None, "PT", None, None, None, "NOMBRE", "DIRECCION", None, "PT", None, "TELEFONO"]
+        filas = [
+            [1, "Suscriptor 001", "Calle 1 # 1-1", "X", None, "MI", None, 1, "Suscriptor 101 L-V", "Calle 101 # 1-1", "X", "X", "AL", "3001112233"],
+            [2, "Suscriptor 006 MIERCOLES", "Calle 6 # 6-6", "X", None, "MI", None, 2, "Suscriptor 102 D", "Calle 102 # 2-2", "X", None, "AL", None],
+            [3, "Suscriptor 003", "Calle 3 # 3-3", "X", "X", "MI", None, None, None, None, None, None, None, None],
+        ]
+        resumen = self.ctx.importacion.importar(self.secretaria, self.crear_listado("real.xlsx", {"Repartidor 1": filas}, encabezado))
+        self.assertEqual((resumen.leidos, resumen.importados, resumen.rechazados), (5, 5, 0))  # RNF-04: nadie se pierde
+        self.assertEqual(self.suscriptor("006").periodicidad, "0010000")  # «MIERCOLES»
+        self.assertEqual(self.suscriptor("101").productos, "TIE,PT")
+        self.assertEqual(self.suscriptor("102").zona, "AL")
+        sin_leer = [r for r in resumen.revisar if "columna N" in r.motivo]
+        self.assertEqual(len(sin_leer), 1)  # el teléfono a la derecha no se pierde en silencio
+        self.assertIn("1 dato(s)", sin_leer[0].motivo)
+        self.assertIn("lista 2", " ".join(r.hoja for r in resumen.revisar))
 
     def test_importacion_repetida_no_duplica(self):
         self.importar_demo()
@@ -303,6 +333,36 @@ class PruebasSuscripciones(BaseSRI):
         self.ingreso(nombre="Ana Pérez", direccion="Calle 10 # 5-20", periodicidad="Diaria")  # reingreso
         self.assertTrue(self.ctx.suscriptores.obtener(ana.id).activo)
         self.assertEqual(self.ctx.suscriptores.contar(), 3)
+
+    def test_depuracion_anual_anonimiza_retirados_antiguos(self):
+        ana, luis = self.suscriptor("Ana"), self.suscriptor("Luis")
+        hace_dos_anios = self.f(self.hoy - timedelta(days=730))
+        self.ctx.operativo.registrar_entrega(self.secretaria, ana.id, self.f(self.hoy - timedelta(days=800)), "CON NOVEDAD", "Reclamo de Ana")
+        self.ctx.suscripciones.registrar_retiro(self.secretaria, ana.id, hace_dos_anios, "Ana se mudó")
+        self.ctx.suscripciones.registrar_retiro(self.secretaria, luis.id, self.f(self.lunes))  # reciente: no se toca
+        with self.assertRaises(PermisoDenegado):
+            self.ctx.suscripciones.depurar_retirados(self.secretaria, 12)
+        self.assertEqual(self.ctx.suscripciones.depurar_retirados(self.gerencia, 12), 1)
+        anonima = self.ctx.suscriptores.obtener(ana.id)
+        self.assertEqual((anonima.nombre, anonima.direccion, anonima.estado), (f"Suscriptor anonimizado {ana.id}", "", "RETIRADO"))
+        historial = self.ctx.consultas.historial_suscriptor(self.gerencia, ana.id)
+        self.assertEqual([e.novedad for e in historial], [""])  # la entrega se conserva, sin el texto
+        _, novedades = self.ctx.consultas.ficha_suscriptor(self.gerencia, ana.id)
+        self.assertNotIn("Ana", " ".join(n.detalle for n in novedades))
+        self.assertEqual(self.ctx.suscriptores.obtener(luis.id).nombre, "Luis Gómez")
+        self.assertEqual(self.ctx.suscripciones.depurar_retirados(self.gerencia, 12), 0)  # no repite
+
+    def test_rf06_buscar_suscriptores_sin_entregas_y_ficha(self):
+        marta = self.suscriptor("Marta")
+        self.ctx.suscripciones.registrar_retiro(self.secretaria, marta.id, self.f(self.lunes), "Canceló")
+        self.assertEqual(self.ctx.consultas.buscar_entregas(self.secretaria, {"texto": "Marta"}), [])  # no tiene entregas
+        encontrados = self.ctx.consultas.buscar_suscriptores(self.gerencia, {"texto": "Marta"})
+        self.assertEqual([s.nombre for s in encontrados], ["Marta Ruiz"])
+        self.assertEqual(self.ctx.consultas.buscar_suscriptores(self.gerencia, {"estado": "RETIRADO"})[0].id, marta.id)
+        self.assertEqual(len(self.ctx.consultas.buscar_suscriptores(self.gerencia, {"estado": "ACTIVO"})), 2)
+        suscriptor, novedades = self.ctx.consultas.ficha_suscriptor(self.gerencia, marta.id)
+        self.assertEqual((suscriptor.estado, suscriptor.fecha_retiro), ("RETIRADO", self.lunes.isoformat()))
+        self.assertEqual([n.tipo for n in novedades], ["RETIRO"])
 
     def test_rf09_cambio(self):
         marta = self.suscriptor("Marta")
@@ -464,8 +524,13 @@ class PruebasRespaldo(BaseSRI):
         copia = self.ctx.respaldos.copiar_a_drive(self.gerencia, drive)
         self.assertTrue(copia.exists())
         self.assertTrue(copia.read_bytes().startswith(b"SRIBAK1"))  # en la nube queda cifrado
-        self.assertEqual(self.ctx.respaldos.avisos(), [])
         self.assertEqual(self.ctx.respaldos.estado(self.gerencia)["dias_drive"], 0)
+        avisos = self.ctx.respaldos.avisos()
+        self.assertEqual(len(avisos), 1)
+        self.assertIn("verificado", avisos[0])  # falta la prueba mensual de restauración
+        resultado = self.ctx.respaldos.verificar(self.gerencia, copia)
+        self.assertEqual(resultado["suscriptores"], 0)
+        self.assertEqual(self.ctx.respaldos.avisos(), [])
 
     def test_rf07_fallo_del_respaldo_diario_se_avisa(self):
         bloqueo = self.temporal / "bloqueo"
@@ -473,6 +538,33 @@ class PruebasRespaldo(BaseSRI):
         os.environ["SRI_BACKUP_DIR"] = str(bloqueo)
         self.assertIsNone(self.ctx.respaldos.respaldo_automatico(self.secretaria.usuario_id))
         self.assertTrue(any("falló" in a for a in self.ctx.respaldos.avisos()))
+
+    def test_rf07_verificar_respaldo_y_copia_de_la_clave(self):
+        self.importar_demo()
+        archivo = self.ctx.respaldos.crear(self.gerencia, self.temporal / "r.sribak")
+        self.ctx.operativo.crear_distribuidor(self.secretaria, "Posterior", "3009998877")
+        resultado = self.ctx.respaldos.verificar(self.gerencia, archivo)
+        self.assertEqual(resultado["suscriptores"], 3)
+        # Verificar no reemplaza la base: lo creado después del respaldo sigue ahí.
+        self.assertIn("Posterior", [d.nombre for d in self.ctx.operativo.listar_distribuidores(self.secretaria)])
+        dañado = self.temporal / "d.sribak"
+        dañado.write_bytes(b"SRIBAK1" + b"x" * 64)
+        with self.assertRaises(DatosInvalidos):
+            self.ctx.respaldos.verificar(self.gerencia, dañado)
+        with self.assertRaises(PermisoDenegado):
+            self.ctx.respaldos.verificar(self.secretaria, archivo)
+
+        usb = self.temporal / "USB"
+        usb.mkdir()
+        copia = self.ctx.respaldos.guardar_copia_clave(self.gerencia, usb)
+        self.assertEqual(copia.read_bytes(), (self.temporal / "prueba.key").read_bytes())
+        self.ctx.respaldos.guardar_copia_clave(self.gerencia, usb)  # la misma clave otra vez: sin error
+        otra = self.temporal / "OTRA"
+        otra.mkdir()
+        (otra / "sri.key").write_bytes(b"0" * 32)
+        with self.assertRaises(Conflicto):  # nunca pisa una clave distinta
+            self.ctx.respaldos.guardar_copia_clave(self.gerencia, otra)
+        self.assertEqual((otra / "sri.key").read_bytes(), b"0" * 32)
 
     def test_respaldo_cifrado_y_restauracion(self):
         self.importar_demo()

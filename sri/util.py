@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import calendar
 import re
 import unicodedata
 from datetime import date, datetime
@@ -68,6 +69,13 @@ def formato_fecha(valor: date | datetime | str | None) -> str:
         except ValueError:
             return valor
     return valor.strftime("%d/%m/%Y")
+
+
+def restar_meses(fecha: date, meses: int) -> date:
+    """La misma fecha `meses` antes; si ese día no existe (31 de abril), el último del mes."""
+    total = fecha.year * 12 + fecha.month - 1 - meses
+    anio, mes = divmod(total, 12)
+    return date(anio, mes + 1, min(fecha.day, calendar.monthrange(anio, mes + 1)[1]))
 
 
 def hoy_iso() -> str:

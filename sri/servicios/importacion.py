@@ -7,6 +7,7 @@ producto TIE (El Tiempo) y PT (Portafolio) y el código de ruta.
 
 from __future__ import annotations
 
+import csv
 import re
 import sqlite3
 from datetime import date, datetime
@@ -20,7 +21,7 @@ from ..seguridad import Cifrador
 from ..util import DatosInvalidos, ErrorNegocio, limpiar_texto, normalizar
 from .auditoria import AuditoriaServicio
 from .autenticacion import AutenticacionServicio
-from .lectores import crear_lector, mapear_columnas
+from .lectores import crear_lector, detectar_listas
 
 ARCHIVO_ILEGIBLE = (
     "El archivo está dañado o no se puede leer. Revise que sea el listado de repartidores "
@@ -38,6 +39,16 @@ NOMBRES_CAMPO = {
 CAMPOS = ("numero", "nombre", "direccion", "direccion_fs", "tie", "pt", "ruta", "novedades")
 NO_MARCADO = {"", "0", "NO", "N", "-", "FALSO", "FALSE"}
 FILAS_BUSQUEDA_ENCABEZADO = 10
+
+
+def letra_columna(indice: int) -> str:
+    """0 → A, 25 → Z, 26 → AA (como Excel)."""
+    letras = ""
+    indice += 1
+    while indice:
+        indice, resto = divmod(indice - 1, 26)
+        letras = chr(65 + resto) + letras
+    return letras
 
 
 class ImportacionServicio:
@@ -72,7 +83,6 @@ class ImportacionServicio:
             raise DatosInvalidos("La ruta seleccionada no es un archivo.")
 
         lector = crear_lector(ruta, self.config.get("formatos_admitidos"))
-        obligatorias = self.config.get("columnas_obligatorias", ["nombre", "direccion", "tie", "pt", "ruta"])
         mapeo = self.config.get("mapeo_columnas", {})
         self._maximo = int(self.config.get("importacion", {}).get("maximo_rechazos_detallados", 500))
         resumen = ResumenImportacion(archivo=ruta.name, leidos=0, importados=0, actualizados=0, rechazados=0)
@@ -83,24 +93,38 @@ class ImportacionServicio:
                 self._activos = {d.id: d for d in self.distribuidores.listar(incluir_inactivos=False)}
                 self._rutas_vistas: dict[tuple[str, str], int] = {}
                 for hoja, filas in lector.leer(ruta):
-                    mapa, encontrado = self._encabezado(filas, obligatorias, mapeo)
-                    if mapa is None:  # hoja vacía
+                    listas, fila_encabezado, faltantes = self._encabezado(filas, mapeo)
+                    if listas is None:  # hoja vacía
                         continue
-                    if not encontrado:
-                        faltantes = [NOMBRES_CAMPO.get(c, c) for c in obligatorias if c not in mapa]
+                    if faltantes:
                         raise DatosInvalidos(
-                            f"La hoja «{hoja}» no contiene las columnas obligatorias: "
-                            + ", ".join(faltantes)
-                            + ". Revise el mapeo de columnas en config.json."
+                            f"La hoja «{hoja}» no tiene las columnas: "
+                            + ", ".join(NOMBRES_CAMPO.get(c, c) for c in faltantes)
+                            + ". Cada lista necesita nombre, dirección, TIE, PT y código de ruta; "
+                            "revise el mapeo de columnas en config.json."
                         )
                     resumen.hojas += 1
                     distribuidor = self._distribuidor_de_hoja(hoja)
+                    usadas = {j for mapa in listas for j in mapa.values()}
+                    sin_leer: dict[int, int] = {}
                     for numero_fila, valores in filas:
-                        datos = self._extraer(valores, mapa)
-                        if not (datos["nombre"] or datos["direccion"] or datos["ruta"]):
-                            continue
-                        resumen.leidos += 1
-                        self._procesar(datos, hoja, numero_fila, distribuidor, archivo_id, resumen)
+                        for k, mapa in enumerate(listas, start=1):
+                            datos = self._extraer(valores, mapa)
+                            if not (datos["nombre"] or datos["direccion"] or datos["ruta"]):
+                                continue
+                            resumen.leidos += 1
+                            etiqueta = hoja if len(listas) == 1 else f"{hoja} · lista {k}"
+                            self._procesar(datos, etiqueta, numero_fila, distribuidor, archivo_id, resumen)
+                        for j, valor in enumerate(valores):
+                            if j not in usadas and self._texto(valor):
+                                sin_leer[j] = sin_leer.get(j, 0) + 1
+                    # RNF-04: lo que no pertenece a ninguna lista no puede perderse en silencio.
+                    for j, cantidad in sorted(sin_leer.items()):
+                        self._revisar(
+                            resumen, hoja, fila_encabezado,
+                            f"La columna {letra_columna(j)} tiene {cantidad} dato(s) que no se leyeron: "
+                            "no pertenece a ninguna lista (falta el encabezado NOMBRE/DIRECCION)",
+                        )
 
                 if resumen.leidos == 0:
                     raise DatosInvalidos("El archivo no contiene filas de suscriptores para importar.")
@@ -131,6 +155,21 @@ class ImportacionServicio:
             sesion.usuario_id,
         )
         return resumen
+
+    def exportar_casos(self, sesion: Sesion, resumen: ResumenImportacion, destino: str | Path) -> Path:
+        """Lista de rechazos y casos para revisar con la Gerencia, en CSV para Excel (RF-01)."""
+        self.auth.exigir(sesion, "RF-01")
+        ruta = Path(destino)
+        ruta.parent.mkdir(parents=True, exist_ok=True)
+        with ruta.open("w", encoding="utf-8-sig", newline="") as archivo:
+            escritor = csv.writer(archivo, delimiter=";")
+            escritor.writerow(["Archivo", resumen.archivo])
+            escritor.writerow([])
+            escritor.writerow(["Tipo", "Hoja", "Fila", "Motivo", "Revisado (sí/no)", "Decisión de la Gerencia"])
+            for tipo, casos in (("Rechazado", resumen.rechazos), ("Para revisar", resumen.revisar)):
+                for caso in casos:
+                    escritor.writerow([tipo, caso.hoja, caso.fila, caso.motivo, "", ""])
+        return ruta
 
     def historial(self, sesion: Sesion, limite: int = 15) -> list[ArchivoImportacion]:
         self.auth.exigir(sesion, "RF-06")
@@ -287,22 +326,26 @@ class ImportacionServicio:
         return coincidencias[0] if len(coincidencias) == 1 else None
 
     @staticmethod
-    def _encabezado(filas, obligatorias: list[str], mapeo: dict) -> tuple[dict | None, bool]:
-        """Busca la fila de encabezados entre las primeras filas con datos de la hoja."""
-        primera = None
-        revisadas = 0
-        for _numero, valores in filas:
+    def _encabezado(filas, mapeo: dict) -> tuple[list[dict] | None, int, list[str]]:
+        """Busca la fila de encabezados entre las primeras filas con datos de la hoja.
+
+        Devuelve (listas, número de fila, campos que faltan); listas None = hoja vacía.
+        """
+        primera, revisadas = None, 0
+        for numero, valores in filas:
             textos = [limpiar_texto(v) for v in valores]
             if not any(textos):
                 continue
-            mapa = mapear_columnas(textos, mapeo)
-            if all(c in mapa for c in obligatorias):
-                return mapa, True
-            primera = primera if primera is not None else mapa
+            encontrado = detectar_listas(textos, mapeo)
+            if encontrado is not None:
+                return encontrado[0], numero, encontrado[1]
+            primera = primera or numero
             revisadas += 1
             if revisadas >= FILAS_BUSQUEDA_ENCABEZADO:
                 break
-        return primera, False
+        if primera is None:
+            return None, 0, []
+        return [], primera, ["nombre", "direccion"]
 
     def _rechazar(self, resumen: ResumenImportacion, hoja: str, fila: int, motivo: str) -> None:
         resumen.rechazados += 1

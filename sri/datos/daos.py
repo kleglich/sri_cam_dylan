@@ -343,7 +343,7 @@ class SuscriptorDAO:
         parametros.append(-1 if texto else limite)
         resultados = self._filtrar([self.mapear(f) for f in self.bd.todos(sql, tuple(parametros))], texto)
         resultados.sort(key=lambda s: normalizar(s.nombre))
-        return resultados[:limite]
+        return resultados if limite < 0 else resultados[:limite]  # limite < 0 = sin límite
 
     def listar_del_dia(
         self, fecha_iso: str, ruta_id: int | None = None, texto: str = "", limite: int = 500
@@ -371,7 +371,7 @@ class SuscriptorDAO:
         if parametros["finde"]:
             for suscriptor in resultados:
                 suscriptor.direccion = suscriptor.direccion_fs or suscriptor.direccion
-        return resultados[:limite]
+        return resultados if limite < 0 else resultados[:limite]  # limite < 0 = sin límite
 
     def listar_por_rutas(self, ruta_ids: list[int]) -> list[Suscriptor]:
         """Suscriptores activos de un conjunto de rutas (entre semana o fin de semana)."""
@@ -399,6 +399,12 @@ class SuscriptorDAO:
             or buscado in normalizar(s.direccion_fs)
             or buscado in normalizar(s.zona)
         ]
+
+    def retirados_sin_anonimizar(self, hasta: str) -> list[int]:
+        return [f[0] for f in self.bd.todos(
+            "SELECT id FROM suscriptor WHERE estado = 'RETIRADO' AND fecha_retiro <= ? AND indice_nombre <> 'ANONIMIZADO'",
+            (hasta,),
+        )]
 
     def contar(self, solo_activos: bool = False) -> int:
         condicion = " WHERE estado = 'ACTIVO'" if solo_activos else ""
@@ -631,6 +637,10 @@ class EntregaDAO:
         )
         return max(cur.rowcount, 0)
 
+    def borrar_novedades(self, suscriptor_ids: list[int]) -> None:
+        marcas = ",".join(["?"] * len(suscriptor_ids))
+        self.bd.ejecutar(f"UPDATE entrega SET novedad = '' WHERE suscriptor_id IN ({marcas})", tuple(suscriptor_ids))
+
     def listar_novedades_fecha(self, fecha: str) -> list[Entrega]:
         return [e for e in self.listar_fecha(fecha, limite=-1) if e.estado in ("NO ENTREGADA", "CON NOVEDAD")]
 
@@ -663,6 +673,13 @@ class NovedadSuscripcionDAO:
             (fecha, tipo, self.cifrador.cifrar(detalle), suscriptor_id, usuario_id, ahora_iso()),
         )
         return int(cur.lastrowid)
+
+    def suprimir_detalles(self, suscriptor_ids: list[int], texto: str) -> None:
+        marcas = ",".join(["?"] * len(suscriptor_ids))
+        self.bd.ejecutar(
+            f"UPDATE novedad_suscripcion SET detalle = ? WHERE suscriptor_id IN ({marcas})",
+            (self.cifrador.cifrar(texto), *suscriptor_ids),
+        )
 
     def listar(
         self, fecha: str | None = None, suscriptor_id: int | None = None, limite: int = 500

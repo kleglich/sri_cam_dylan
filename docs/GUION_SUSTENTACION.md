@@ -8,7 +8,7 @@ Duración objetivo: **10 a 12 minutos** (8 de exposición y demostración + 3 de
 
 ## 1. Antes de presentar (checklist de 5 minutos)
 
-- [ ] Ejecutar `python -m unittest discover -s pruebas -v` y confirmar **26 pruebas OK**.
+- [ ] Ejecutar `python -m unittest discover -s pruebas -v` y confirmar **31 pruebas OK**.
 - [ ] Reconstruir la demo si se hizo una prueba previa: `python herramientas\preparar_demo.py --reiniciar` (las fechas de la demo son relativas al día en que se prepara).
 - [ ] Abrir `run.bat` y verificar el login con `secretaria` / `Sri2026*` y `gerencia` / `Sri2026*`.
 - [ ] Tener a mano `datos_ejemplo/listado_repartidores_actualizado.xlsx`.
@@ -31,7 +31,7 @@ Duración objetivo: **10 a 12 minutos** (8 de exposición y demostración + 3 de
 | 5:00–6:15 | Novedades de entrega | Entregas programadas por periodicidad, una novedad y **Cerrar el día**. |
 | 6:15–7:00 | Ruta imprimible | Imprimir la ruta de un distribuidor con sus tres secciones. |
 | 7:00–8:30 | Gerencia | Reporte sobre entregas programadas y copia a Google Drive. |
-| 8:30–9:30 | Pruebas y trazabilidad | Las 26 pruebas y la matriz RF/RN. |
+| 8:30–9:30 | Pruebas y trazabilidad | Las 31 pruebas y la matriz RF/RN. |
 | 9:30–10:00 | Cierre | Logros, limitaciones y evolución. |
 
 ---
@@ -87,7 +87,7 @@ Duración objetivo: **10 a 12 minutos** (8 de exposición y demostración + 3 de
 ### 3.9 Pruebas y trazabilidad (1 min)
 
 ```text
-Ran 26 tests
+Ran 31 tests
 OK
 ```
 
@@ -123,7 +123,7 @@ OK
 > Queda registrado y, al iniciar la siguiente sesión, aparece un aviso. Lo mismo si pasan más de siete días sin copia en Google Drive.
 
 **¿Cómo saben que funciona?**
-> Con 26 pruebas automatizadas y una prueba de humo de la interfaz con ambos roles y las 9 pantallas.
+> Con 31 pruebas automatizadas y una prueba de humo de la interfaz con ambos roles y las 9 pantallas.
 
 **¿Qué falta?**
 > Subida automática a Google Drive por su API, empaquetado `.exe`, validación con el listado real anonimizado en el equipo de la gerente y la observación directa de una jornada.

@@ -8,9 +8,10 @@ from ..seguridad import hash_contrasena, verificar_contrasena
 from ..util import DatosInvalidos, PermisoDenegado, validar_usuario
 from .auditoria import AuditoriaServicio
 
+CONTRASENA_DEMO = "Sri2026*"
 USUARIOS_DEMO = (
-    ("secretaria", "Secretaria", "Sri2026*"),
-    ("gerencia", "Gerencia", "Sri2026*"),
+    ("secretaria", "Secretaria", CONTRASENA_DEMO),
+    ("gerencia", "Gerencia", CONTRASENA_DEMO),
 )
 
 
@@ -34,7 +35,8 @@ class AutenticacionServicio:
     def iniciar_sesion(self, nombre: str, contrasena: str) -> Sesion:
         fila = self.usuarios.buscar_por_nombre(nombre or "")
         if not fila or not bool(fila["activo"]):
-            self.auditoria.registrar("LOGIN_FALLIDO", f"Intento con usuario inexistente: {nombre or '(vacío)'}")
+            # Lo escrito en «usuario» no se guarda: a veces es la contraseña puesta en el campo equivocado.
+            self.auditoria.registrar("LOGIN_FALLIDO", "Intento con un usuario que no existe o está inactivo")
             raise CredencialesInvalidas("Usuario o contraseña incorrectos.")
         if not verificar_contrasena(contrasena or "", fila["contrasena_hash"]):
             self.auditoria.registrar("LOGIN_FALLIDO", f"Contraseña incorrecta para {fila['nombre']}", fila["id"])
@@ -42,7 +44,8 @@ class AutenticacionServicio:
 
         usuario = Usuario(id=fila["id"], nombre=fila["nombre"], rol=fila["rol"], activo=True)
         self.auditoria.registrar("SESION", "Inicio de sesión correcto", usuario.id)
-        return Sesion(usuario)
+        # Con la contraseña de demostración se pide cambiarla antes de usar el sistema.
+        return Sesion(usuario, cambiar_contrasena=contrasena == CONTRASENA_DEMO)
 
     def cambiar_contrasena(self, sesion: Sesion, actual: str, nueva: str, confirmacion: str) -> None:
         fila = self.usuarios.buscar_por_nombre(sesion.nombre)
@@ -50,6 +53,10 @@ class AutenticacionServicio:
             raise CredencialesInvalidas("La contraseña actual no es correcta.")
         if nueva != confirmacion:
             raise DatosInvalidos("La nueva contraseña y su confirmación no coinciden.")
+        if nueva == actual:
+            raise DatosInvalidos("La nueva contraseña debe ser distinta de la actual.")
+        if nueva == CONTRASENA_DEMO:
+            raise DatosInvalidos("No use la contraseña de demostración; elija una propia.")
         self.usuarios.actualizar_hash(sesion.usuario_id, hash_contrasena(nueva))
         self.auditoria.registrar("SEGURIDAD", "Cambio de contraseña", sesion.usuario_id)
 

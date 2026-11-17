@@ -103,6 +103,44 @@ def _canonica(texto: str) -> str:
     return re.sub(r"[^A-Z0-9]", "", normalizar(texto))
 
 
+def detectar_listas(encabezados: list[str], mapeo: dict[str, list[str]]) -> tuple[list[dict[str, int]], list[str]] | None:
+    """Detecta las listas de una fila de encabezados del listado real (Anexo D, Figura 12).
+
+    Cada hoja puede traer varias listas lado a lado; cada una empieza en una
+    columna «NOMBRE» y debe tener «DIRECCION». En el archivo de la empresa el
+    número, la marca de El Tiempo y el código de ruta no tienen encabezado, así
+    que, si no hay uno con nombre, se ubican por posición:
+    [N°] NOMBRE DIRECCION [TIE] PT [RUTA].
+
+    Devuelve (listas, campos que faltan) o None si la fila no es de encabezados.
+    """
+    canon = [_canonica(t) for t in encabezados]
+    sinonimos = {campo: {c for c in map(_canonica, lista) if c} for campo, lista in mapeo.items()}
+    inicios = [i for i, c in enumerate(canon) if c in sinonimos.get("nombre", set())]
+    if not inicios:
+        return None
+    listas, faltantes, ultima = [], [], -1
+    for k, inicio in enumerate(inicios):
+        fin = inicios[k + 1] - 2 if k + 1 < len(inicios) else len(canon) - 1  # deja el N° de la lista siguiente
+        mapa = {"nombre": inicio}
+        for campo, nombres in sinonimos.items():
+            if campo != "nombre":
+                encontrada = next((j for j in range(max(ultima + 1, inicio - 1), fin + 1) if canon[j] in nombres), None)
+                if encontrada is not None:
+                    mapa[campo] = encontrada
+        if "direccion" not in mapa:
+            return None
+        direccion = mapa["direccion"]
+        for campo, j in (("numero", inicio - 1), ("tie", direccion + 1), ("pt", direccion + 2),
+                         ("ruta", mapa.get("pt", direccion + 2) + 1)):
+            if campo not in mapa and ultima < j < len(canon) and not canon[j]:
+                mapa[campo] = j
+        faltantes += [c for c in ("tie", "pt", "ruta") if c not in mapa and c not in faltantes]
+        ultima = max(mapa.values())
+        listas.append(mapa)
+    return listas, faltantes
+
+
 def mapear_columnas(encabezados: list[str], mapeo: dict[str, list[str]]) -> dict[str, int]:
     """Relaciona cada campo lógico con el índice de la columna del archivo.
 

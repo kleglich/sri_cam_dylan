@@ -7,11 +7,11 @@ import sqlite3
 from datetime import date
 
 from ..datos.base_datos import BaseDatos
-from ..datos.daos import NovedadSuscripcionDAO, RutaDAO, SuscriptorDAO
+from ..datos.daos import EntregaDAO, NovedadSuscripcionDAO, RutaDAO, SuscriptorDAO
 from ..dominio.modelos import NovedadSuscripcion, Sesion, Suscriptor
 from ..dominio.periodicidad import parsear
 from ..seguridad import Cifrador
-from ..util import Conflicto, DatosInvalidos, limpiar_texto, normalizar, parsear_fecha
+from ..util import Conflicto, DatosInvalidos, limpiar_texto, normalizar, parsear_fecha, restar_meses
 from .auditoria import AuditoriaServicio
 from .autenticacion import AutenticacionServicio
 
@@ -39,8 +39,10 @@ class SuscripcionServicio:
         cifrador: Cifrador,
         auth: AutenticacionServicio,
         auditoria: AuditoriaServicio,
+        entregas: EntregaDAO,
     ):
         self.bd = bd
+        self.entregas = entregas
         self.suscriptores = suscriptores
         self.rutas = rutas
         self.novedades = novedades
@@ -154,6 +156,31 @@ class SuscripcionServicio:
             raise Conflicto("Ya existe otro suscriptor con ese nombre y esa dirección.") from error
         self.auditoria.registrar("NOVEDAD_SUSCRIPCION", f"Cambio de suscriptor #{suscriptor_id}", sesion.usuario_id)
         return campos
+
+    def depurar_retirados(self, sesion: Sesion, meses: int) -> int:
+        """Depuración anual (Ley 1581, secciones 2.4 y 6.6): anonimiza a los retirados hace más de
+        `meses`. El registro y sus entregas se conservan para las estadísticas (RN-12); se borran el
+        nombre, las direcciones y los textos de novedades. Devuelve cuántos se anonimizaron."""
+        self.auth.exigir(sesion, "DEPURACION")
+        if not isinstance(meses, int) or not 1 <= meses <= 120:
+            raise DatosInvalidos("Indique un plazo entre 1 y 120 meses.")
+        ids = self.suscriptores.retirados_sin_anonimizar(restar_meses(date.today(), meses).isoformat())
+        if not ids:
+            return 0
+        with self.bd.transaccion():
+            for suscriptor_id in ids:
+                self.suscriptores.actualizar(suscriptor_id, {
+                    "nombre": f"Suscriptor anonimizado {suscriptor_id}",
+                    "direccion": "",
+                    "direccion_fs": "",
+                    "novedades": "",
+                    "indice_busqueda": f"anonimizado-{suscriptor_id}",
+                    "indice_nombre": "ANONIMIZADO",
+                })
+            self.entregas.borrar_novedades(ids)
+            self.novedades.suprimir_detalles(ids, "Detalle suprimido en la depuración anual")
+        self.auditoria.registrar("DEPURACION", f"{len(ids)} suscriptor(es) retirado(s) anonimizado(s)", sesion.usuario_id)
+        return len(ids)
 
     # ------------------------------------------------------------------ #
     def novedades_del_dia(self, sesion: Sesion, fecha: str) -> list[NovedadSuscripcion]:

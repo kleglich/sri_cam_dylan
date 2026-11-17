@@ -71,7 +71,7 @@ La composición se centraliza en `sri/contexto.py` (`Contexto`), que crea la con
 | `sri/servicios/respaldos.py` | Respaldo diario automático, retención de 7, copia a Google Drive, avisos y restauración. |
 | `sri/servicios/auditoria.py` | Bitácora de eventos sin datos personales. |
 | `sri/presentacion/*` | Interfaz: login, shell por rol, vistas y diálogos. |
-| `pruebas/test_sri.py` | 26 pruebas automatizadas de requisitos, reglas y migración. |
+| `pruebas/test_sri.py` | 31 pruebas automatizadas de requisitos, reglas y migración. |
 | `herramientas/*` | Generación de archivos de ejemplo y preparación de la demo. |
 
 ### Patrones utilizados
@@ -107,8 +107,11 @@ Selección del libro de Excel
    → crear_lector (por extensión) → una entrada por hoja
    → BEGIN IMMEDIATE
         por cada hoja (= un distribuidor):
-          · buscar la fila de encabezados en las primeras filas y mapear columnas (config.json)
-          · si faltan columnas obligatorias: error con el nombre de la hoja → ROLLBACK
+          · buscar la fila de encabezados en las primeras filas: una lista por cada «NOMBRE»
+            (listas lado a lado); cada lista necesita DIRECCION; N°, TIE y RUTA se ubican por
+            posición si no tienen encabezado: [N°] NOMBRE DIRECCION [TIE] PT [RUTA]
+          · si a una lista le falta TIE, PT o ruta: error con el nombre de la hoja → ROLLBACK
+          · las celdas con datos fuera de toda lista se cuentan por columna → caso para revisar
           · distribuidor de la hoja = nombre, primer nombre o iniciales («CARLOS (2)» → Carlos Pérez)
           por cada fila con datos:
             · rechazar si falta nombre, dirección o código de ruta, o si no tiene TIE ni PT
@@ -329,7 +332,6 @@ Decisiones relevantes:
 `config.json` controla:
 
 - `formatos_admitidos`: extensiones aceptadas.
-- `columnas_obligatorias`: campos mínimos de cada hoja (`numero`, `nombre`, `direccion`, `tie`, `pt`, `ruta`).
 - `mapeo_columnas`: sinónimos de encabezados por campo lógico (incluye `direccion_fs` y `novedades`, opcionales).
 - `importacion.maximo_rechazos_detallados`: límite de rechazos y casos mostrados (500 por defecto).
 - `respaldo.carpeta_por_defecto`: carpeta de los respaldos diarios.
@@ -361,7 +363,7 @@ Comando:
 python -m unittest discover -s pruebas -v
 ```
 
-Resultado actual: **26 pruebas OK**.
+Resultado actual: **31 pruebas OK**.
 
 ### Rendimiento
 
