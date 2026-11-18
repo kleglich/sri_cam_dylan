@@ -67,7 +67,7 @@ La composición se centraliza en `sri/contexto.py` (`Contexto`), que crea la con
 | `sri/servicios/lectores.py` | Estrategias de lectura para `.xlsx`, `.xls` y `.csv`; devuelven todas las hojas. |
 | `sri/servicios/suscripciones.py` | Novedades de suscripción del listado impreso: ingreso, retiro y cambio (RF-09). |
 | `sri/servicios/operativo.py` | Distribuidores, rutas, novedades de entrega, cierre del día y ruta imprimible. |
-| `sri/servicios/consultas.py` | Búsquedas, reporte diario sobre entregas programadas, exportaciones y tablero. |
+| `sri/servicios/consultas.py` | Búsquedas, reporte diario sobre entregas programadas, y exportaciones. |
 | `sri/servicios/respaldos.py` | Respaldo diario automático, retención de 7, copia a Google Drive, avisos y restauración. |
 | `sri/servicios/auditoria.py` | Bitácora de eventos sin datos personales. |
 | `sri/presentacion/*` | Interfaz: login, shell por rol, vistas y diálogos. |
@@ -355,7 +355,7 @@ Variables de entorno útiles para pruebas o demostraciones aisladas:
 - **Framework:** `unittest` de la biblioteca estándar.
 - **Aislamiento:** cada prueba crea una carpeta temporal, una base y una clave propias; nunca usa la base de demostración.
 - **Cobertura funcional:** autenticación, permisos, periodicidad, importación multihoja (XLSX y CSV), dos direcciones, códigos de ruta, archivo dañado, novedades de suscripción, programación y cierre del día, reporte, ruta imprimible, consultas, respaldo diario, retención, Google Drive, avisos, restauración y migración.
-- **Prueba de humo de interfaz:** inicio de sesión con ambos roles y recorrido de las 9 vistas con acciones reales, sin excepciones; de ahí salen las capturas de `docs/capturas/`.
+- **Prueba de humo de interfaz:** inicio de sesión con ambos roles y recorrido de las 8 vistas con acciones reales, sin excepciones; de ahí salen las capturas de `docs/capturas/`.
 
 Comando:
 

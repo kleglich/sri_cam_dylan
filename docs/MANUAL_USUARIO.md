@@ -24,8 +24,6 @@ Este manual describe el uso diario de la aplicación para los dos roles del proy
 
 ### Ayudas en pantalla
 
-- La pantalla de **Inicio** muestra la **rutina de hoy** con marcas (✓ hecho, ○ falta) y un botón **Ir** para cada paso.
-- Cada pantalla tiene un botón **? Ayuda** arriba a la derecha que explica para qué sirve.
 - Las fechas se eligen con **Hoy**, **Ayer** o **Calendario**; no hace falta escribirlas.
 - Los mensajes de error dicen qué hacer, por ejemplo: «La dirección no tiene número. Pregunte a la editorial por WhatsApp y regístrela después».
 
@@ -72,25 +70,13 @@ Este manual describe el uso diario de la aplicación para los dos roles del proy
 
 ---
 
-## 3. Pantalla de inicio
-
-![Pantalla de inicio](capturas/02_inicio.png)
-
-- **Suscriptores**: suscriptores activos (los retirados no cuentan).
-- **Rutas** y **Distribuidores** activos.
-- **Entregas de hoy**: entregas **programadas** para hoy según la periodicidad de cada suscriptor.
-- **Efectividad hoy**: entregadas ÷ programadas. Mientras el día no se cierre, las entregas sin novedad cuentan como pendientes.
-- **Tareas frecuentes** y **Últimas importaciones**.
-
----
-
-## 4. Importar el listado de repartidores (RF-01)
+## 3. Importar el listado de repartidores (RF-01)
 
 ![Importar listado](capturas/03_importar.png)
 
 Se usa para la **carga inicial** del Excel de la empresa y, si hace falta, para volver a cargar el listado completo. Las novedades del día a día **no** se importan: se registran en **Pasar el listado impreso**.
 
-### 4.1 Cómo debe estar el archivo
+### 3.1 Cómo debe estar el archivo
 
 Un libro `.xlsx` o `.xls` con **una hoja por distribuidor**. Cada hoja puede tener **una o varias listas lado a lado** (por ejemplo, A a F y H a M), y cada lista tiene estas columnas, como el archivo de la empresa (Anexo D, Figura 12):
 
@@ -105,9 +91,9 @@ Un libro `.xlsx` o `.xls` con **una hoja por distribuidor**. Cada hoja puede ten
 - **RUTA**: código con las iniciales del distribuidor (CP = Carlos Pérez).
 - La fila de encabezados puede estar después de un título; se busca en las primeras filas de cada hoja. Si el listado usa otros encabezados, agréguelos en `config.json` → `mapeo_columnas`.
 
-### 4.2 Importar
+### 3.2 Importar
 
-1. Registre primero los **distribuidores** (sección 8), para que los códigos de ruta se asocien solos.
+1. Registre primero los **distribuidores** (sección 7), para que los códigos de ruta se asocien solos.
 2. Abra **Importar listado de repartidores** y pulse **Crear respaldo ahora** en el recuadro amarillo: si el archivo trae algo inesperado, la Gerencia puede volver al estado anterior.
 3. Pulse **Seleccionar…**, elija el archivo y pulse **Importar**.
 4. Si hubo rechazos o casos para revisar, se abre la ventana **Revisar con la Gerencia** con la lista completa:
@@ -116,7 +102,7 @@ Un libro `.xlsx` o `.xls` con **una hoja por distribuidor**. Cada hoja puede ten
    - **Exportar a Excel (CSV)…** guarda la lista con columnas para anotar si se revisó y qué se decidió.
 5. Si una columna con datos no pertenece a ninguna lista (por ejemplo, teléfonos a la derecha sin encabezado NOMBRE), el sistema lo avisa en **Para revisar** con la letra de la columna, para que ningún dato se pierda sin aviso.
 
-### 4.3 Qué hace el sistema
+### 3.3 Qué hace el sistema
 
 - Separa la periodicidad del nombre y la guarda aparte.
 - **Asocia cada código de ruta a su distribuidor** por sus iniciales. Si el código no corresponde a un distribuidor activo (por ejemplo, «AL» de alguien que ya no trabaja), la ruta queda sin asignar y aparece en **Revisar**.
@@ -134,7 +120,7 @@ Un libro `.xlsx` o `.xls` con **una hoja por distribuidor**. Cada hoja puede ten
 
 ---
 
-## 5. Pasar el listado impreso (RF-09)
+## 4. Pasar el listado impreso (RF-09)
 
 ![Pasar el listado impreso](capturas/10_novedades.png)
 
@@ -156,7 +142,7 @@ Validaciones:
 
 ---
 
-## 6. Lo que reportan los repartidores y cierre del día (RF-05)
+## 5. Lo que reportan los repartidores y cierre del día (RF-05)
 
 ![Lo que reportan los repartidores](capturas/04_entregas.png)
 
@@ -171,7 +157,7 @@ Notas: no se admiten fechas futuras (RN-04); cada suscriptor tiene un solo estad
 
 ---
 
-## 7. Rutas y ruta imprimible (RF-02)
+## 6. Rutas y ruta imprimible (RF-02)
 
 ![Rutas y distribuidores](capturas/05_rutas.png)
 
@@ -183,7 +169,7 @@ Notas: no se admiten fechas futuras (RN-04); cada suscriptor tiene un solo estad
 
 ---
 
-## 8. Distribuidores (RF-04)
+## 7. Distribuidores (RF-04)
 
 ![Distribuidores](capturas/06_distribuidores.png)
 
@@ -193,7 +179,7 @@ Notas: no se admiten fechas futuras (RN-04); cada suscriptor tiene un solo estad
 
 ---
 
-## 9. Consulta del historial (RF-06)
+## 8. Consulta del historial (RF-06)
 
 ![Consulta del historial](capturas/07_consultas.png)
 
@@ -206,7 +192,7 @@ En **Buscar en** elija:
 
 ---
 
-## 10. Reporte diario de entregas (RF-03)
+## 9. Reporte diario de entregas (RF-03)
 
 ![Reporte diario](capturas/08_reportes.png)
 
@@ -217,7 +203,7 @@ En **Buscar en** elija:
 
 ---
 
-## 11. Respaldos (RF-07)
+## 10. Respaldos (RF-07)
 
 ![Respaldos](capturas/09_respaldos.png)
 
@@ -254,7 +240,7 @@ Una vez al año, indique el plazo (por ejemplo, 12 meses) y pulse **Depurar…**
 
 ---
 
-## 12. Solución de problemas
+## 11. Solución de problemas
 
 | Situación | Causa probable | Solución |
 |---|---|---|
@@ -272,7 +258,7 @@ Una vez al año, indique el plazo (por ejemplo, 12 meses) y pulse **Depurar…**
 
 ---
 
-## 13. Buenas prácticas y privacidad
+## 12. Buenas prácticas y privacidad
 
 - Use los datos únicamente con fines logísticos (RN-10, Ley 1581 de 2012).
 - No comparta contraseñas ni la clave `datos/sri.key`.
@@ -282,7 +268,7 @@ Una vez al año, indique el plazo (por ejemplo, 12 meses) y pulse **Depurar…**
 
 ---
 
-## 14. Glosario
+## 13. Glosario
 
 | Término | Significado |
 |---|---|

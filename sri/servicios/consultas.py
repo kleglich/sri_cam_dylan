@@ -8,8 +8,6 @@ from datetime import date
 from pathlib import Path
 
 from ..datos.daos import (
-    ArchivoDAO,
-    DistribuidorDAO,
     EntregaDAO,
     NovedadSuscripcionDAO,
     ReporteDAO,
@@ -35,18 +33,14 @@ class ConsultasServicio:
         suscriptores: SuscriptorDAO,
         entregas: EntregaDAO,
         rutas: RutaDAO,
-        distribuidores: DistribuidorDAO,
         reportes: ReporteDAO,
-        archivos: ArchivoDAO,
         auth: AutenticacionServicio,
         novedades: NovedadSuscripcionDAO,
     ):
         self.suscriptores = suscriptores
         self.entregas = entregas
         self.rutas = rutas
-        self.distribuidores = distribuidores
         self.reportes = reportes
-        self.archivos = archivos
         self.auth = auth
         self.novedades = novedades
 
@@ -263,29 +257,6 @@ class ConsultasServicio:
 </html>"""
         ruta.write_text(contenido, encoding="utf-8")
         return ruta
-
-    # ------------------------------------------------------------------ #
-    # Tablero de inicio
-    # ------------------------------------------------------------------ #
-    def dashboard(self, sesion: Sesion) -> dict:
-        self.auth.exigir(sesion, "RF-06")
-        hoy = date.today().isoformat()
-        estados = self.entregas.contar_por_estado(hoy)
-        total = sum(estados.values())
-        efectivas = estados.get("ENTREGADA", 0)
-        return {
-            "suscriptores": self.suscriptores.contar(solo_activos=True),
-            "rutas": self.rutas.contar(),
-            "distribuidores": self.distribuidores.contar_activos(),
-            "entregas_hoy": total,
-            "pendientes_hoy": estados.get("PENDIENTE", 0),
-            "reportes_hoy": estados.get("NO ENTREGADA", 0) + estados.get("CON NOVEDAD", 0),
-            "novedades_suscripcion_hoy": len(self.novedades.listar(fecha=hoy)),
-            "efectivas_hoy": efectivas,
-            "efectividad_hoy": round(efectivas / total * 100, 1) if total else None,
-            "estados_hoy": estados,
-            "importaciones": self.archivos.listar(5),
-        }
 
     @staticmethod
     def filas_novedades(reporte: ReporteDiario) -> list[tuple[str, str, str, str]]:

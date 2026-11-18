@@ -4,7 +4,7 @@ Aplicación de escritorio para **Distribuciones Cam Dylan S.A.S.** que consolida
 
 Proyecto Integrador · Universidad de Santander · 2026. Alineado con el informe **Avance_informe_proyecto1_v5.3**.
 
-![Pantalla de inicio](docs/capturas/02_inicio.png)
+![Lo que reportan los repartidores](docs/capturas/04_entregas.png)
 
 ## 1. Alcance implementado
 

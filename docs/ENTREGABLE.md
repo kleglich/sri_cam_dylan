@@ -17,7 +17,7 @@ Este documento funciona como acta de entrega: enumera los artefactos, relaciona 
 | Listado de repartidores de ejemplo (formato del Anexo D) | Entregado | `datos_ejemplo/` |
 | Respaldos cifrados de demostración (manual y diario) | Entregados | `respaldos/` |
 | Pruebas automatizadas | 31/31 OK | `pruebas/test_sri.py` |
-| Capturas de pantalla | 10 pantallas | `docs/capturas/` |
+| Capturas de pantalla | 9 pantallas | `docs/capturas/` |
 | Manual de usuario | Entregado | `docs/MANUAL_USUARIO.md` |
 | Documento de arquitectura | Entregado | `docs/ARQUITECTURA.md` |
 | Guion de sustentación | Entregado | `docs/GUION_SUSTENTACION.md` |
@@ -124,7 +124,7 @@ OK
 [RNF-02: importación de 10.000 registros en 2.23 s]
 ```
 
-Además se ejecutó una **prueba de humo de la interfaz** sobre una copia de la base demo: inicio de sesión con ambos roles, apertura de las 9 vistas, importación del listado actualizado, registro de una novedad de entrega, ruta imprimible y copia a Google Drive, sin excepciones de Tk. Las capturas de `docs/capturas/` provienen de esa prueba.
+Además se ejecutó una **prueba de humo de la interfaz** sobre una copia de la base demo: inicio de sesión con ambos roles, apertura de las 8 vistas, importación del listado actualizado, registro de una novedad de entrega, ruta imprimible y copia a Google Drive, sin excepciones de Tk. Las capturas de `docs/capturas/` provienen de esa prueba.
 
 ---
 
@@ -134,7 +134,7 @@ Además se ejecutó una **prueba de humo de la interfaz** sobre una copia de la 
 |---|---|---|
 | 1 | Ejecutar `run.bat` | Pantalla de inicio de sesión |
 | 2 | Ingresar `secretaria` / `Sri2026*` | Aviso «Aún no se ha copiado ningún respaldo a Google Drive»; menú con importar, novedades de suscripción, novedades de entrega, rutas, distribuidores e historial |
-| 3 | Revisar **Inicio** | 76 suscriptores activos, 5 rutas, 4 distribuidores y las entregas programadas de hoy |
+| 3 | Revisar **Rutas y distribuidores** | 5 rutas, cada una con su distribuidor, y 4 distribuidores activos |
 | 4 | **Pasar el listado impreso** | Novedades de hoy: 1 ingreso, 1 retiro y 1 cambio; registrar un ingreso con dirección «Centro» → mensaje de dirección incompleta |
 | 5 | **Lo que reportan los repartidores** | Entregas de hoy según la periodicidad; tocar a un suscriptor, elegir un motivo rápido y pulsar **Entregado con novedad**; luego **Cerrar el día…** → la confirmación dice cuántas se marcarán |
 | 6 | **Importar** `listado_repartidores_actualizado.xlsx` | 86 leídos = 3 nuevos + 81 actualizados + 2 rechazados, y 5 casos para revisar: periodicidad «quincenal», ruta AL en la hoja de Marta (ya es de Luis), el suscriptor retirado hoy (aparece en dos hojas) y un posible duplicado del suscriptor cuya dirección se cambió hoy |

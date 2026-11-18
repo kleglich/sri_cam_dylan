@@ -87,9 +87,7 @@ class Contexto:
             self.suscriptores,
             self.entregas,
             self.rutas,
-            self.distribuidores,
             self.reportes,
-            self.archivos,
             self.auth,
             self.novedades,
         )

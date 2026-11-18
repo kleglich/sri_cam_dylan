@@ -122,9 +122,6 @@ class DistribuidorDAO:
     def cambiar_activo(self, distribuidor_id: int, activo: bool) -> None:
         self.bd.ejecutar("UPDATE distribuidor SET activo = ? WHERE id = ?", (1 if activo else 0, distribuidor_id))
 
-    def contar_activos(self) -> int:
-        return int(self.bd.uno("SELECT COUNT(*) FROM distribuidor WHERE activo = 1")[0])
-
 
 class RutaDAO:
     def __init__(self, bd: BaseDatos):
@@ -173,9 +170,6 @@ class RutaDAO:
 
     def asignar(self, ruta_id: int, distribuidor_id: int | None) -> None:
         self.bd.ejecutar("UPDATE ruta SET distribuidor_id = ? WHERE id = ?", (distribuidor_id, ruta_id))
-
-    def contar(self) -> int:
-        return int(self.bd.uno("SELECT COUNT(*) FROM ruta")[0])
 
     def contar_por_distribuidor(self, distribuidor_id: int) -> int:
         return int(
