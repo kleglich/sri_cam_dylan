@@ -36,8 +36,9 @@ class VistaNovedades(tk.Frame):
         self.encontrados = {}
         self.seleccionado = None
 
-        self.grid_columnconfigure(0, weight=5)
-        self.grid_columnconfigure(1, weight=3)
+        # El formulario conserva su ancho completo; si falta espacio se angosta la lista del día.
+        self.grid_columnconfigure(0, weight=0)
+        self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(1, weight=1)
 
         cabecera_vista(
