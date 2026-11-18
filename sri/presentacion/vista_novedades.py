@@ -16,6 +16,7 @@ from .widgets import (
     crear_arbol,
     etiqueta_campo,
     llenar_arbol,
+    marco_desplazable,
     mostrar_error,
     mostrar_info,
     tarjeta,
@@ -54,8 +55,13 @@ class VistaNovedades(tk.Frame):
 
     # ------------------------------------------------------------------ #
     def _construir_formulario(self) -> None:
-        panel = tarjeta(self, relleno=16)
-        panel.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
+        caja = tarjeta(self, relleno=16)
+        caja.grid(row=1, column=0, sticky="nsew", padx=(0, 8))
+        # Botones fijos abajo: con el buscador abierto (retiro y cambio) el formulario no cabe en pantallas bajas.
+        pie = tk.Frame(caja, bg=COLORES["panel"])
+        pie.pack(side="bottom", fill="x", pady=(12, 0))
+        contenedor, panel = marco_desplazable(caja, COLORES["panel"])
+        contenedor.pack(fill="both", expand=True)
         panel.grid_columnconfigure(1, weight=1)
         panel.grid_columnconfigure(3, weight=1)
 
@@ -131,20 +137,19 @@ class VistaNovedades(tk.Frame):
         self.detalle = ttk.Entry(panel, font=(FUENTE, 12))
         self.detalle.grid(row=fila, column=1, columnspan=3, sticky="ew", pady=4, ipady=3)
 
-        fila += 1
-        acciones = tk.Frame(panel, bg=COLORES["panel"])
-        acciones.grid(row=fila, column=0, columnspan=4, sticky="ew", pady=(12, 0))
+        acciones = tk.Frame(pie, bg=COLORES["panel"])
+        acciones.pack(fill="x")
         ttk.Button(acciones, text="Guardar novedad", style="Primario.TButton", command=self._guardar).pack(side="left")
         ttk.Button(acciones, text="Limpiar", style="Secundario.TButton", command=self._limpiar).pack(side="left", padx=(8, 0))
         self.estado = texto(
-            panel,
+            pie,
             "La periodicidad admite: Diaria, L-V, L-S, S-D, D o una lista de días.",
             tamano=9,
             color=COLORES["texto_suave"],
             wraplength=560,
             justify="left",
         )
-        self.estado.grid(row=fila + 1, column=0, columnspan=4, sticky="w", pady=(10, 0))
+        self.estado.pack(anchor="w", pady=(10, 0))
 
     def _construir_lista(self) -> None:
         panel = tarjeta(self, relleno=16)

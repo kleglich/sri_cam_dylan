@@ -43,6 +43,31 @@ def tarjeta(master, relleno: int = 16, fondo: str | None = None) -> tk.Frame:
     )
 
 
+def marco_desplazable(master, fondo: str) -> tuple[tk.Frame, tk.Frame]:
+    """Devuelve (contenedor, interior): el interior se desplaza con barra y rueda si no cabe."""
+    contenedor = tk.Frame(master, bg=fondo)
+    lienzo = tk.Canvas(contenedor, bg=fondo, highlightthickness=0, bd=0)
+    barra = ttk.Scrollbar(contenedor, orient="vertical", command=lienzo.yview)
+    interior = tk.Frame(lienzo, bg=fondo)
+    ventana = lienzo.create_window(0, 0, window=interior, anchor="nw")
+    lienzo.configure(yscrollcommand=barra.set)
+    interior.bind(
+        "<Configure>",
+        lambda _e: lienzo.configure(scrollregion=lienzo.bbox("all"), width=interior.winfo_reqwidth()),
+    )
+    lienzo.bind("<Configure>", lambda e: lienzo.itemconfigure(ventana, width=e.width))
+
+    def rueda(evento) -> None:
+        if not isinstance(evento.widget, ttk.Treeview):  # la lista se desplaza sola
+            lienzo.yview_scroll(int(-evento.delta / 120), "units")
+
+    contenedor.bind("<Enter>", lambda _e: contenedor.bind_all("<MouseWheel>", rueda))
+    contenedor.bind("<Leave>", lambda _e: contenedor.unbind_all("<MouseWheel>"))
+    barra.pack(side="right", fill="y")
+    lienzo.pack(side="left", fill="both", expand=True)
+    return contenedor, interior
+
+
 def cabecera_vista(master, titulo: str, subtitulo: str = "") -> tk.Frame:
     marco = tk.Frame(master, bg=COLORES["fondo"])
     texto(marco, titulo, tamano=20, negrita=True, fondo=COLORES["fondo"]).pack(anchor="w")
