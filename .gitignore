@@ -27,3 +27,8 @@ Desktop.ini
 ~$*
 .vscode/
 .idea/
+
+# Base, respaldos y copia de la clave que crea el kit de prueba
+kit_de_prueba/prueba/
+kit_de_prueba/drive_de_prueba/
+kit_de_prueba/usb_de_prueba/

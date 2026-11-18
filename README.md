@@ -57,6 +57,10 @@ o bien `python main.py`. La primera ejecución crea `datos/sri_cam_dylan.db`, la
 | `datos_ejemplo/listado_repartidores.xlsx` | Carga inicial: 5 hojas (incluida una hoja repetida), 84 filas, 2 rechazos y 3 casos para revisar (código «AL» de un distribuidor retirado, periodicidad «quincenal», suscriptor con oficina y casa) |
 | `datos_ejemplo/listado_repartidores_actualizado.xlsx` | Recarga en vivo con 2 suscriptores nuevos |
 
+### Kit de prueba
+
+Para aprender a usar el SRI sin tocar los datos reales, abra `kit_de_prueba\abrir_SRI_de_prueba.bat`: usa una base aparte dentro de `kit_de_prueba\prueba`. La carpeta trae cinco listados para probar la importación (carga inicial, recarga, columna extra, sin columnas y archivo dañado). Para empezar de cero, ejecute `borrar_prueba_y_empezar_de_cero.bat`. Los pasos están en la guía de prueba paso a paso.
+
 La base de demostración contiene 76 suscriptores activos, 5 rutas, 4 distribuidores, una semana de días cerrados con novedades de entrega, las novedades del listado impreso de hoy (1 ingreso, 1 retiro y 1 cambio), un respaldo manual y el respaldo diario.
 
 ```bat
@@ -83,6 +87,7 @@ sri_cam_dylan/
 ├── pruebas/test_sri.py         31 pruebas automatizadas
 ├── herramientas/               Generación del listado de ejemplo y preparación de la demo
 ├── datos_ejemplo/              Listados de repartidores de ejemplo
+├── kit_de_prueba/              Base de prueba aparte y listados para probar la importación
 ├── datos/                      Base SQLite y clave local (no versionar)
 ├── respaldos/                  Respaldos .sribak (diarios y manuales)
 ├── exportes/                   Reportes y rutas imprimibles
